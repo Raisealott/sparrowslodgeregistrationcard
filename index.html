@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <!-- Prevent iOS Safari from zooming on input focus; disable user scaling for kiosk feel -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#2b4338">
+  <title>Sparrows Lodge — Digital Registration</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="app">
+
+  <!-- ══════════════════════════════════════════════════════
+       STEP 0 — DASHBOARD
+       ══════════════════════════════════════════════════════ -->
+  <div id="step-dashboard" class="step active">
+
+    <header class="step-header">
+      <div class="hotel-name">Sparrows Lodge</div>
+      <div class="hotel-sub">Palm Springs</div>
+      <div id="dashboard-date" class="dashboard-date"></div>
+    </header>
+
+    <div class="step-body">
+      <div class="step-body-inner">
+
+        <!-- Current registrations -->
+        <div class="list-group">
+          <div class="list-group-header">
+            <span class="list-group-title">Current</span>
+            <span id="count-current" class="list-group-count"></span>
+          </div>
+          <div id="list-current" class="entry-list"></div>
+        </div>
+
+        <!-- Previous / completed registrations -->
+        <div class="list-group">
+          <div class="list-group-header">
+            <span class="list-group-title">Previous</span>
+            <span id="count-previous" class="list-group-count"></span>
+          </div>
+          <div id="list-previous" class="entry-list"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <button id="btn-new-registration" class="btn-primary" type="button">
+        + New Registration
+      </button>
+    </div>
+
+  </div><!-- /step-dashboard -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       STEP 1 — UPLOAD
+       ══════════════════════════════════════════════════════ -->
+  <div id="step-upload" class="step">
+
+    <header class="step-header">
+      <button class="btn-go-dashboard">← Home</button>
+      <div class="hotel-name">Sparrows Lodge</div>
+      <div class="hotel-sub">Palm Springs</div>
+      <div class="step-title">New Registration</div>
+      <div class="progress">
+        <div class="progress-dot active"></div>
+        <div class="progress-dot"></div>
+        <div class="progress-dot"></div>
+      </div>
+    </header>
+
+    <div class="step-body">
+      <div class="step-body-inner">
+
+        <div class="upload-intro">
+          <h2>Upload Reservation PDF</h2>
+          <p>Tap below to select the guest's confirmation document. Reservation details will be extracted automatically.</p>
+        </div>
+
+        <!-- Drop zone — tap or drag-and-drop -->
+        <div id="drop-zone" class="drop-zone" role="button" tabindex="0"
+             aria-label="Tap to upload a reservation PDF">
+          <div class="drop-icon" aria-hidden="true">📄</div>
+          <div class="drop-label">Tap to Upload PDF</div>
+          <div class="drop-sub">or drag and drop</div>
+          <button id="browse-btn" class="browse-btn" type="button">Choose File</button>
+        </div>
+
+        <!-- Hidden native file picker -->
+        <input id="file-input" type="file" accept=".pdf,application/pdf"
+               style="display:none" aria-label="Select PDF file">
+
+        <div id="upload-error" class="upload-error" role="alert"></div>
+
+      </div>
+    </div>
+  </div><!-- /step-upload -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       STEP 2 — PROCESSING
+       ══════════════════════════════════════════════════════ -->
+  <div id="step-processing" class="step">
+
+    <header class="step-header">
+      <button class="btn-go-dashboard">← Home</button>
+      <div class="hotel-name">Sparrows Lodge</div>
+      <div class="hotel-sub">Palm Springs</div>
+      <div class="step-title">Reading Document</div>
+      <div class="progress">
+        <div class="progress-dot done"></div>
+        <div class="progress-dot active"></div>
+        <div class="progress-dot"></div>
+      </div>
+    </header>
+
+    <div class="step-body">
+      <div class="processing-center">
+        <div class="spinner" role="status" aria-label="Processing document"></div>
+        <div class="processing-label">Extracting Reservation Details</div>
+        <div class="processing-sub">This usually takes just a moment…</div>
+      </div>
+    </div>
+
+  </div><!-- /step-processing -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       STEP 3 — REVIEW & EDIT
+       ══════════════════════════════════════════════════════ -->
+  <div id="step-review" class="step">
+
+    <header class="step-header">
+      <button class="btn-go-dashboard">← Home</button>
+      <div class="hotel-name">Sparrows Lodge</div>
+      <div class="hotel-sub">Palm Springs</div>
+      <div class="step-title">Review &amp; Confirm</div>
+      <div class="progress">
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot active"></div>
+      </div>
+    </header>
+
+    <div class="step-body">
+      <div class="step-body-inner">
+
+        <!-- Validation summary banner — shown after extraction -->
+        <div id="validation-banner" class="validation-banner" role="alert"></div>
+
+        <!-- ── Guest Information ─────────────────────────── -->
+        <section class="review-section">
+          <div class="review-section-title">Guest Information</div>
+
+          <div class="field-wrapper">
+            <label class="field-label" for="field-guest-name">
+              Guest Name <span class="field-required" aria-label="required">*</span>
+            </label>
+            <input id="field-guest-name" class="field-input" type="text"
+                   placeholder="Full name" autocomplete="off" autocorrect="off"
+                   autocapitalize="words" spellcheck="false">
+            <div class="field-hint" aria-live="polite"></div>
+          </div>
+
+          <div class="field-wrapper">
+            <label class="field-label" for="field-email">Email</label>
+            <input id="field-email" class="field-input" type="email"
+                   placeholder="guest@email.com" autocomplete="off" autocorrect="off"
+                   autocapitalize="none" spellcheck="false">
+            <div class="field-hint" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <!-- ── Reservation Details ──────────────────────── -->
+        <section class="review-section">
+          <div class="review-section-title">Reservation Details</div>
+
+          <div class="field-row">
+            <div class="field-wrapper">
+              <label class="field-label" for="field-confirmation">
+                Confirmation # <span class="field-required" aria-label="required">*</span>
+              </label>
+              <input id="field-confirmation" class="field-input" type="text"
+                     placeholder="e.g. 591109111" autocomplete="off" spellcheck="false">
+              <div class="field-hint" aria-live="polite"></div>
+            </div>
+
+            <div class="field-wrapper">
+              <label class="field-label" for="field-room-number">Room No.</label>
+              <input id="field-room-number" class="field-input" type="text"
+                     placeholder="e.g. 08" autocomplete="off">
+              <div class="field-hint" aria-live="polite"></div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-wrapper">
+              <label class="field-label" for="field-arrival">
+                Arrival <span class="field-required" aria-label="required">*</span>
+              </label>
+              <input id="field-arrival" class="field-input" type="text"
+                     placeholder="MM/DD/YYYY" autocomplete="off">
+              <div class="field-hint" aria-live="polite"></div>
+            </div>
+
+            <div class="field-wrapper">
+              <label class="field-label" for="field-departure">
+                Departure <span class="field-required" aria-label="required">*</span>
+              </label>
+              <input id="field-departure" class="field-input" type="text"
+                     placeholder="MM/DD/YYYY" autocomplete="off">
+              <div class="field-hint" aria-live="polite"></div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-wrapper">
+              <label class="field-label" for="field-room-type">
+                Room Type <span class="field-required" aria-label="required">*</span>
+              </label>
+              <input id="field-room-type" class="field-input" type="text"
+                     placeholder="e.g. PR, ST, DL" autocomplete="off"
+                     autocapitalize="characters">
+              <div class="field-hint" aria-live="polite"></div>
+            </div>
+
+            <div class="field-wrapper">
+              <label class="field-label" for="field-adults">Adults</label>
+              <input id="field-adults" class="field-input" type="text"
+                     placeholder="# guests" autocomplete="off">
+              <div class="field-hint" aria-live="polite"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ── Rate Information ─────────────────────────── -->
+        <section class="review-section">
+          <div class="review-section-title">Rate Information</div>
+
+          <div class="field-wrapper">
+            <label class="field-label" for="field-nightly-rate">
+              Avg. Nightly Rate (USD) <span class="field-required" aria-label="required">*</span>
+            </label>
+            <input id="field-nightly-rate" class="field-input" type="text"
+                   placeholder="0.00" autocomplete="off">
+            <div class="field-hint" aria-live="polite"></div>
+          </div>
+
+          <!-- Breakdown shown when multiple date-range rates are detected -->
+          <div id="rate-lines-display" class="rate-lines-display"
+               aria-label="Detected rate breakdown"></div>
+        </section>
+
+      </div><!-- /step-body-inner -->
+    </div><!-- /step-body -->
+
+    <div class="action-bar">
+      <button id="btn-back-upload" class="btn-secondary" type="button">↩ Back</button>
+      <button id="btn-confirm"     class="btn-primary"   type="button">Generate Card →</button>
+    </div>
+
+  </div><!-- /step-review -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       STEP 4 — REGISTRATION CARD
+       ══════════════════════════════════════════════════════ -->
+  <div id="step-card" class="step">
+
+    <header class="step-header">
+      <button class="btn-go-dashboard">← Home</button>
+      <div class="hotel-name">Sparrows Lodge</div>
+      <div class="hotel-sub">Palm Springs</div>
+      <div class="step-title">Registration Card</div>
+      <div class="progress">
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+        <div class="progress-dot done"></div>
+      </div>
+    </header>
+
+    <div class="step-body">
+      <div class="step-body-inner">
+
+
+        <!-- ═══════════════════════════════════════════════
+             PRINTABLE REGISTRATION CARD
+             ═══════════════════════════════════════════════ -->
+        <article class="registration-card" id="registration-card">
+
+          <!-- Hotel header -->
+          <div class="card-header">
+            <div class="card-logo" aria-hidden="true">
+              <!--
+                Sparrows Lodge logo placeholder.
+                Replace this SVG with an <img src="assets/logo.svg"> when the
+                logo asset is available.
+              -->
+              <svg width="52" height="36" viewBox="0 0 52 36" fill="none"
+                   xmlns="http://www.w3.org/2000/svg">
+                <path d="M26 3 C22 3 17 7 17 13 C17 21 26 33 26 33 C26 33 35 21 35 13 C35 7 30 3 26 3Z"
+                      stroke="#2b4338" stroke-width="1.4" fill="none"/>
+                <path d="M19 15 L26 10 L33 15"
+                      stroke="#2b4338" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+                <line x1="26" y1="10" x2="26" y2="24"
+                      stroke="#2b4338" stroke-width="1" stroke-dasharray="2 2"/>
+              </svg>
+            </div>
+            <div class="card-hotel-name">Sparrows Lodge</div>
+            <div class="card-hotel-sub">Palm Springs</div>
+            <div class="card-hotel-address">
+              1330 E. Palm Canyon Drive &middot; Palm Springs, California 92264<br>
+              (760) 327-2300 &middot; hello@sparrowslodge.com &middot; sparrowslodge.com
+            </div>
+          </div>
+
+          <!-- Guest information -->
+          <div class="card-section">
+            <div class="card-section-label">Guest Information</div>
+            <div class="card-guest-grid">
+              <div class="card-field" style="grid-column: 1 / -1">
+                <div class="card-field-label">Guest Name</div>
+                <div class="card-field-value" id="card-guest-name"></div>
+              </div>
+              <div class="card-field">
+                <div class="card-field-label">Email</div>
+                <div class="card-field-value" id="card-email"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Booking details table -->
+          <div class="card-section" style="padding: 0">
+            <table class="booking-table">
+              <thead>
+                <tr>
+                  <th>Room No.</th>
+                  <th>Confirmation</th>
+                  <th>Arrival</th>
+                  <th>Departure</th>
+                  <th>Room Type</th>
+                  <th>Adults</th>
+                  <th style="text-align: center">Vehicle</th>
+                  <th>Avg. Nightly Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td id="card-room-number"></td>
+                  <td id="card-confirmation"></td>
+                  <td id="card-arrival"></td>
+                  <td id="card-departure"></td>
+                  <td id="card-room-type"></td>
+                  <td id="card-adults"></td>
+                  <td style="text-align: center">
+                    <!-- Car info collected at check-in -->
+                    <div class="car-inputs">
+                      <div class="car-input-group">
+                        <label class="car-input-label">Make</label>
+                        <input type="text" class="car-input" aria-label="Car make">
+                      </div>
+                      <div class="car-input-group">
+                        <label class="car-input-label">Model</label>
+                        <input type="text" class="car-input" aria-label="Car model">
+                      </div>
+                    </div>
+                  </td>
+                  <td id="card-nightly-rate"></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Hotel policies -->
+          <div class="policy-section">
+            <div class="policy-greeting">Greetings from Sparrow's Lodge!</div>
+            <div class="policy-text">
+              <p>Sparrow's Lodge has a 48-hour cancellation policy. In the event of an early departure, one night's room and tax will be applied to your bill. Payment of all charges must be secured at check-in. Sparrow's Lodge offers physical room keys — you may be charged $100 for any lost keys.</p>
+              <p>Payment may be made by acceptable credit, debit card, or other management-approved billing methods. Guests paying by credit card acknowledge that their card will be preauthorized for all room and tax charges. Additional authorization is taken to secure guest incidental charges. This includes incidentals or guests whose room and tax charges are being paid by a third party. Any unused authorization is released at the time of check-out. Please note that your financial institution will determine how quickly the authorization is released back to your account.</p>
+              <p>For your convenience, Sparrow's Lodge will create a running account for your charges made at the lobby bar/restaurant. Unless instructed otherwise, a 20% auto gratuity will be automatically added to your account.</p>
+              <p>Pool Hours: 6 am – 11 pm | Flotation devices, any type of ball, and/or amplified music are not permitted in the pool area. Pool use is exclusive to registered guests. There is no glass by the pool at any time. All outside Food and Beverages are strictly prohibited in public areas.</p>
+              <p>Sparrow's Lodge is not responsible for property lost, stolen, or left behind on the property. Sparrow's Lodge offers outdoor parking for guests' convenience and is not responsible for any lost or stolen items from vehicles or damage to vehicles parked on the property.</p>
+              <p>Sparrow's Lodge is 100% non-smoking. A smoking and cleaning fee of $250 will be charged to any room where evidence of smoking is found.</p>
+              <p>We welcome dogs less than 40 pounds with a one-time fee of $100 per stay, per dog. All dogs are required to be on a leash at all times.</p>
+              <p>For your convenience and to enhance your guest experience, we welcome you to participate in the daily resort fee upon arrival. The resort fee includes access to the property Wi-Fi, the Sparrows Lodge breakfast, overnight self-parking, and more. Valued at $75, these amenities are available to our guests for $40 per night.</p>
+            </div>
+            <div class="policy-initials">
+              Initials <div class="initials-line" aria-label="Initials line"></div>
+            </div>
+          </div>
+
+          <!-- Guest signature -->
+          <div class="signature-section">
+            <div class="signature-label">Guest Signature</div>
+            <div class="signature-line" aria-label="Signature line"></div>
+          </div>
+
+        </article><!-- /registration-card -->
+
+      </div><!-- /step-body-inner -->
+    </div><!-- /step-body -->
+
+    <div class="action-bar">
+      <button id="btn-edit"          class="btn-secondary" type="button">← Edit</button>
+      <button id="btn-save-draft"    class="btn-secondary" type="button">Save &amp; Close</button>
+      <button id="btn-hand-to-guest" class="btn-complete"  type="button">Hand to Guest →</button>
+    </div>
+
+  </div><!-- /step-card -->
+
+
+  <!-- ══════════════════════════════════════════════════════
+       STEP — GUEST KIOSK FLOW
+       Full-screen, one question at a time.
+       No header — progress bar + nav buttons provide orientation.
+       ══════════════════════════════════════════════════════ -->
+  <div id="step-guest" class="step">
+
+    <!-- Progress bar fills left→right as guest advances -->
+    <div class="guest-progress">
+      <div class="guest-progress-bar" id="guest-progress-bar"></div>
+    </div>
+
+    <!-- Slide container — slides animate in/out absolutely within this -->
+    <div class="guest-slides" id="guest-slides"></div>
+
+    <!-- Fixed navigation bar -->
+    <div class="guest-nav">
+      <button id="guest-btn-back" type="button">← Back</button>
+      <button id="guest-btn-next" type="button">Continue →</button>
+    </div>
+
+  </div><!-- /step-guest -->
+
+
+</div><!-- /app -->
+
+<!-- PDF.js 3.x from CDN — must load before app modules -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<!-- App modules — load in dependency order (no build step required) -->
+<script src="js/store.js"></script>
+<script src="js/fieldNormalizer.js"></script>
+<script src="js/rateCalculator.js"></script>
+<script src="js/parser.js"></script>
+<script src="js/pdfExtractor.js"></script>
+<script src="js/validator.js"></script>
+<script src="js/formPrefiller.js"></script>
+<script src="js/uploader.js"></script>
+<script src="js/carData.js"></script>
+<script src="js/questions.js"></script>
+<script src="js/signaturePad.js"></script>
+<script src="js/guestFlow.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
