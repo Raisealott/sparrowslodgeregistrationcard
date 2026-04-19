@@ -10,7 +10,7 @@
  *   completedAt:  ISO date string | null
  *   fields: {
  *     guestName, confirmationNumber, arrivalDate, departureDate,
- *     roomType, roomNumber, nightlyRate, adults, email
+ *     roomType, nightlyRate, adults, email
  *   },
  *   rateLines:  Array<{ startDate, endDate, rate }>
  * }

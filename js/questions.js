@@ -33,6 +33,15 @@ const Questions = (() => {
       type: 'welcome',
     },
     {
+      id:           'policy',
+      type:         'policy',
+      label:        'Policy & Resort Fee',
+      field:        'resortFeeConsent',
+      required:     true,
+      showInReview: true,
+      reviewLabel:  'Resort Fee',
+    },
+    {
       id:          'contact',
       type:        'stack',
       label:       'Contact Information',
@@ -53,9 +62,9 @@ const Questions = (() => {
       showInReview: true,
       reviewLabel: 'Vehicle',
       inputs: [
-        { field: 'carMake',  label: 'Make',  placeholder: 'e.g. Toyota', suggest: 'carBrand' },
-        { field: 'carModel', label: 'Model', placeholder: 'e.g. Camry',  suggest: 'carModel' },
-        { field: 'carColor', label: 'Color', placeholder: 'e.g. White'   },
+        { field: 'carMake',  label: 'Make',  placeholder: '', suggest: 'carBrand' },
+        { field: 'carModel', label: 'Model', placeholder: '', suggest: 'carModel' },
+        { field: 'carColor', label: 'Color', placeholder: ''   },
       ],
     },
     {

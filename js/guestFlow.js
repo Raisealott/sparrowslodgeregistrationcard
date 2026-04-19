@@ -17,6 +17,7 @@ const GuestFlow = (() => {
   let _entryId      = null;
 
   const TRANSITION_MS = 320;
+  const CONTACT_STEP_ID = 'contact';
 
   // ─── Public API ──────────────────────────────────────────────
 
@@ -153,6 +154,14 @@ const GuestFlow = (() => {
       return null;
     }
 
+    if (q.type === 'policy') {
+      const value = (_state[q.field] || '').trim();
+      if (q.required && !value) {
+        return 'Please choose Approve or Decline to continue.';
+      }
+      return null;
+    }
+
     // Slides with no field (welcome, review, complete): nothing to validate
     if (!q.field) return null;
 
@@ -195,6 +204,7 @@ const GuestFlow = (() => {
 
     const builders = {
       welcome:   _buildWelcome,
+      policy:    _buildPolicy,
       confirm:   _buildConfirm,
       text:      _buildText,
       stack:     _buildStack,
@@ -205,8 +215,9 @@ const GuestFlow = (() => {
 
     el.innerHTML = (builders[q.type] ?? _buildText)(q);
 
-    // Wire confirm "Edit" button
+    // Wire type-specific controls
     if (q.type === 'confirm') _wireConfirm(el, q);
+    if (q.type === 'policy') _wirePolicy(el, q);
 
     // Allow Enter key to advance on single text inputs
     el.querySelector('.guest-input:not(.stack-input)')?.addEventListener('keydown', e => {
@@ -230,6 +241,10 @@ const GuestFlow = (() => {
       q.inputs.forEach((cfg, i) => {
         if (cfg.suggest) _attachCarAutocomplete(stackInputs[i], cfg.suggest, el);
       });
+
+      if (q.id === CONTACT_STEP_ID) {
+        _wireContactPrefillControls(el, q);
+      }
     }
 
     return el;
@@ -245,7 +260,6 @@ const GuestFlow = (() => {
         <div class="gw-greeting">
           ${firstName ? `Welcome,<br><strong>${_esc(firstName)}.</strong>` : 'Welcome.'}
         </div>
-        <p class="gw-sub">Let's complete your check-in.<br>It'll only take a moment.</p>
       </div>`;
   }
 
@@ -302,22 +316,31 @@ const GuestFlow = (() => {
   }
 
   function _buildStack(q) {
-    const inputsHtml = q.inputs.map((inp, i) => `
-      <div class="stack-field">
-        <div class="stack-field-label">${_esc(inp.label)}</div>
+    const isContactStep = q.id === CONTACT_STEP_ID;
+
+    const inputsHtml = q.inputs.map((inp, i) => {
+      const inputHtml = `
         <input
-          class="guest-input stack-input"
-          type="text"
+          class="guest-input stack-input${isContactStep && _state[inp.field] ? ' is-prefilled' : ''}"
+          type="${_esc(inp.inputType || 'text')}"
           placeholder="${_esc(inp.placeholder || '')}"
           value="${_esc(_state[inp.field] || '')}"
           data-field="${_esc(inp.field)}"
           data-stack-index="${i}"
           autocomplete="off"
           autocorrect="off"
-          autocapitalize="words"
+          autocapitalize="${(inp.inputType === 'email' || inp.inputType === 'tel') ? 'none' : 'words'}"
           spellcheck="false"
-        >
-      </div>`).join('');
+        >`;
+
+      return `
+        <div class="stack-field">
+          <div class="stack-field-label">${_esc(inp.label)}</div>
+          ${isContactStep
+            ? `<div class="stack-field-row">${inputHtml}${_buildContactPrefillControls(inp)}</div>`
+            : inputHtml}
+        </div>`;
+    }).join('');
 
     return `
       <div class="guest-slide-inner guest-stack">
@@ -325,6 +348,100 @@ const GuestFlow = (() => {
         <div class="stack-inputs">${inputsHtml}</div>
         ${q.subLabel ? `<p class="gs-sub">${_esc(q.subLabel)}</p>` : ''}
       </div>`;
+  }
+
+  function _buildPolicy(q) {
+    const selected = _state[q.field] || '';
+    const isApproved = selected === 'Approved';
+    const isDeclined = selected === 'Declined';
+
+    return `
+      <div class="guest-slide-inner guest-policy">
+        <div class="gs-label">Greetings from Sparrow's Lodge!</div>
+
+        <div class="guest-policy-card">
+          <p>Sparrow's Lodge has a 48-hour cancellation policy. In the event of an early departure, one night's room and tax will be applied to your bill. Payment of all charges must be secured at check-in. Sparrow's Lodge offers physical room keys - you may be charged $100 for any lost keys.</p>
+          <p>Payment may be made by acceptable credit, debit card, or other management-approved billing methods. Guests paying by credit card acknowledge that their card will be preauthorized for all room and tax charges. Additional authorization is taken to secure guest incidental charges. This includes incidentals or guests whose room and tax charges are being paid by a third party. Any unused authorization is released at the time of check-out. Please note that your financial institution will determine how quickly the authorization is released back to your account.</p>
+          <p>For your convenience, Sparrow's Lodge will create a running account for your charges made at the lobby bar/restaurant. Unless instructed otherwise, a 20% auto gratuity will be automatically added to your account.</p>
+          <p>Pool Hours: 6 am - 11 pm | Flotation devices, any type of ball, and/or amplified music are not permitted in the pool area. Pool use is exclusive to registered guests. There is no glass by the pool at any time. All outside Food and Beverages are strictly prohibited in public areas.</p>
+          <p>Sparrow's Lodge is not responsible for property lost, stolen, or left behind on the property. Sparrow's Lodge offers outdoor parking for guests' convenience and is not responsible for any lost or stolen items from vehicles or damage to vehicles parked on the property.</p>
+          <p>Sparrow's Lodge is 100% non-smoking. A smoking and cleaning fee of $250 will be charged to any room where evidence of smoking is found.</p>
+          <p>We welcome dogs less than 40 pounds with a one-time fee of $100 per stay, per dog. All dogs are required to be on a leash at all times.</p>
+          <p>For your convenience and to enhance your guest experience, we welcome you to participate in the daily resort fee upon arrival. The resort fee includes access to the property Wi-Fi, the Sparrows Lodge breakfast, overnight self-parking, and more. Valued at $75, these amenities are available to our guests for $40 per night.</p>
+        </div>
+
+        <div class="policy-choice-row">
+          <button class="policy-choice-btn${isApproved ? ' selected' : ''}" data-policy-choice="Approved" type="button">Approve</button>
+          <button class="policy-choice-btn${isDeclined ? ' selected' : ''}" data-policy-choice="Declined" type="button">Decline</button>
+        </div>
+      </div>`;
+  }
+
+  function _wirePolicy(slide, q) {
+    const buttons = [...slide.querySelectorAll('.policy-choice-btn')];
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const choice = btn.dataset.policyChoice || '';
+        _state[q.field] = choice;
+        buttons.forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        _clearError();
+      });
+    });
+  }
+
+  function _buildContactPrefillControls(inp) {
+    const hasPrefilled = Boolean(_state[inp.field]);
+    if (!hasPrefilled) return '';
+
+    return `
+      <div class="contact-prefill-controls" data-contact-field="${_esc(inp.field)}">
+        <button class="contact-confirm-btn contact-confirm-decline" type="button" title="Clear and re-enter">✕</button>
+      </div>`;
+  }
+
+  function _wireContactPrefillControls(slide, q) {
+    function clearPrefilledField(input) {
+      const field = input.dataset.field;
+      _state[field] = '';
+      input.value = '';
+      input.classList.remove('is-prefilled');
+      input.dataset.quickClearArmed = '0';
+      const row = slide.querySelector(`.contact-prefill-controls[data-contact-field="${field}"]`);
+      row?.remove();
+      input.focus();
+    }
+
+    const rows = [...slide.querySelectorAll('.contact-prefill-controls')];
+    rows.forEach(row => {
+      const field = row.dataset.contactField;
+      if (!field) return;
+
+      const input = slide.querySelector(`.stack-input[data-field="${field}"]`);
+      const declineBtn = row.querySelector('.contact-confirm-decline');
+      if (!input || !declineBtn) return;
+
+      declineBtn.addEventListener('click', () => {
+        clearPrefilledField(input);
+      });
+    });
+
+    // First Backspace/Delete on a prefilled contact field clears it entirely.
+    const prefilledInputs = [...slide.querySelectorAll('.stack-input.is-prefilled')];
+    prefilledInputs.forEach(input => {
+      input.dataset.quickClearArmed = '1';
+
+      input.addEventListener('keydown', e => {
+        if ((e.key === 'Backspace' || e.key === 'Delete') && input.dataset.quickClearArmed === '1') {
+          e.preventDefault();
+          clearPrefilledField(input);
+        }
+      });
+
+      input.addEventListener('input', () => {
+        input.dataset.quickClearArmed = '0';
+      });
+    });
   }
 
   function _buildText(q) {
@@ -428,6 +545,7 @@ const GuestFlow = (() => {
 
     const labels = {
       welcome:   'Begin Check-In  →',
+      policy:    'Continue  →',
       confirm:   'Yes, Continue  →',
       text:      'Continue  →',
       review:    'Looks Good  →',

@@ -14,10 +14,10 @@ const FormPrefiller = (() => {
     arrivalDate:        'field-arrival',
     departureDate:      'field-departure',
     roomType:           'field-room-type',
-    roomNumber:         'field-room-number',
     nightlyRate:        'field-nightly-rate',
     adults:             'field-adults',
     email:              'field-email',
+    phone:              'field-phone',
   };
 
   /** Apply a parsed value to a single review form field. */
@@ -36,6 +36,8 @@ const FormPrefiller = (() => {
       } else {
         inputEl.value = result.value;
       }
+    } else {
+      inputEl.value = '';
     }
 
     // Apply color-coded status to the wrapper

@@ -105,7 +105,6 @@ const App = (() => {
     const arrival   = formatDateShort(f.arrivalDate);
     const departure = formatDateShort(f.departureDate);
     const meta      = [
-      f.roomNumber  ? `Room ${f.roomNumber}` : null,
       f.roomType    || null,
       f.confirmationNumber ? `#${f.confirmationNumber}` : null,
     ].filter(Boolean).join(' · ');
@@ -120,6 +119,9 @@ const App = (() => {
         <div class="entry-badge badge-${entry.status}">
           ${entry.status === 'current' ? 'In Progress' : 'Completed'}
         </div>
+        <button class="entry-delete-btn" type="button" data-id="${entry.id}" aria-label="Delete entry">
+          Delete
+        </button>
       </div>
       <div class="entry-chevron" aria-hidden="true">›</div>
     `;
@@ -127,6 +129,19 @@ const App = (() => {
     row.addEventListener('click',  () => openEntry(entry.id));
     row.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') openEntry(entry.id);
+    });
+
+    const deleteBtn = row.querySelector('.entry-delete-btn');
+    deleteBtn?.addEventListener('click', e => {
+      e.stopPropagation();
+      const ok = window.confirm('Delete this registration entry? This cannot be undone.');
+      if (!ok) return;
+      Store.remove(entry.id);
+      if (_currentId === entry.id) {
+        _currentId = null;
+        _parsedData = null;
+      }
+      renderDashboard();
     });
 
     return row;
@@ -214,7 +229,10 @@ const App = (() => {
 
       if (validation.hasErrors)        showBanner('error',   'Some required fields could not be detected — fields in red need manual entry.');
       else if (validation.hasWarnings) showBanner('warning', 'Most fields were detected. Please review fields in yellow before confirming.');
-      else                             showBanner('success', 'All fields detected. Review before generating the card.');
+      else {
+        const banner = document.getElementById('validation-banner');
+        if (banner) banner.style.display = 'none';
+      }
 
       goToStep('review');
 
@@ -259,10 +277,10 @@ const App = (() => {
       arrivalDate:        val('field-arrival'),
       departureDate:      val('field-departure'),
       roomType:           val('field-room-type'),
-      roomNumber:         val('field-room-number'),
       nightlyRate:        val('field-nightly-rate'),
       adults:             val('field-adults'),
       email:              val('field-email'),
+      phone:              val('field-phone'),
     };
   }
 
@@ -284,8 +302,9 @@ const App = (() => {
     const fields = entry?.fields ?? {};
     const prefill = {
       guestName:    fields.guestName    || '',
-      email:        '',   // never pre-fill — PDF email is the hotel's, not the guest's
+      email:        fields.email        || '',
       phone:        fields.phone        || '',
+      resortFeeConsent: fields.resortFeeConsent || '',
       arrivalDate:  fields.arrivalDate  || '',
       departureDate: fields.departureDate || '',
       roomType:     fields.roomType     || '',
@@ -308,8 +327,9 @@ const App = (() => {
           completedAt: new Date().toISOString(),
           fields: {
             ...entry.fields,
-            email:     guestState.email     || entry.fields.email || '',
-            phone:     guestState.phone     || '',
+            email:     guestState.email ?? '',
+            phone:     guestState.phone ?? '',
+            resortFeeConsent: guestState.resortFeeConsent || '',
             carMake:   guestState.carMake   || '',
             carModel:  guestState.carModel  || '',
             carColor:  guestState.carColor  || '',
@@ -330,11 +350,11 @@ const App = (() => {
           arrivalDate:        guestState.arrivalDate        || '',
           departureDate:      guestState.departureDate      || '',
           roomType:           guestState.roomType           || '',
-          roomNumber:         '',
           nightlyRate:        guestState.nightlyRate        || '',
           adults:             '',
           email:              guestState.email              || '',
           phone:              guestState.phone              || '',
+          resortFeeConsent:   guestState.resortFeeConsent   || '',
           carMake:            guestState.carMake            || '',
           carModel:           guestState.carModel           || '',
           carColor:           guestState.carColor           || '',
@@ -358,8 +378,8 @@ const App = (() => {
 
     set('card-guest-name',   fields.guestName);
     set('card-email',        fields.email);
+    set('card-phone',        fields.phone);
     set('card-confirmation', fields.confirmationNumber);
-    set('card-room-number',  fields.roomNumber);
     set('card-arrival',      fields.arrivalDate);
     set('card-departure',    fields.departureDate);
     set('card-room-type',    fields.roomType);

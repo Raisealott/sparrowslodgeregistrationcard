@@ -177,6 +177,14 @@
                    autocapitalize="none" spellcheck="false">
             <div class="field-hint" aria-live="polite"></div>
           </div>
+
+          <div class="field-wrapper">
+            <label class="field-label" for="field-phone">Phone</label>
+            <input id="field-phone" class="field-input" type="tel"
+                   placeholder="(555) 123-4567" autocomplete="off" autocorrect="off"
+                   autocapitalize="none" spellcheck="false">
+            <div class="field-hint" aria-live="polite"></div>
+          </div>
         </section>
 
         <!-- ── Reservation Details ──────────────────────── -->
@@ -190,13 +198,6 @@
               </label>
               <input id="field-confirmation" class="field-input" type="text"
                      placeholder="e.g. 591109111" autocomplete="off" spellcheck="false">
-              <div class="field-hint" aria-live="polite"></div>
-            </div>
-
-            <div class="field-wrapper">
-              <label class="field-label" for="field-room-number">Room No.</label>
-              <input id="field-room-number" class="field-input" type="text"
-                     placeholder="e.g. 08" autocomplete="off">
               <div class="field-hint" aria-live="polite"></div>
             </div>
           </div>
@@ -279,12 +280,6 @@
       <button class="btn-go-dashboard">← Home</button>
       <div class="hotel-name">Sparrows Lodge</div>
       <div class="hotel-sub">Palm Springs</div>
-      <div class="step-title">Registration Card</div>
-      <div class="progress">
-        <div class="progress-dot done"></div>
-        <div class="progress-dot done"></div>
-        <div class="progress-dot done"></div>
-      </div>
     </header>
 
     <div class="step-body">
@@ -334,6 +329,10 @@
                 <div class="card-field-label">Email</div>
                 <div class="card-field-value" id="card-email"></div>
               </div>
+              <div class="card-field">
+                <div class="card-field-label">Phone</div>
+                <div class="card-field-value" id="card-phone"></div>
+              </div>
             </div>
           </div>
 
@@ -342,7 +341,6 @@
             <table class="booking-table">
               <thead>
                 <tr>
-                  <th>Room No.</th>
                   <th>Confirmation</th>
                   <th>Arrival</th>
                   <th>Departure</th>
@@ -354,7 +352,6 @@
               </thead>
               <tbody>
                 <tr>
-                  <td id="card-room-number"></td>
                   <td id="card-confirmation"></td>
                   <td id="card-arrival"></td>
                   <td id="card-departure"></td>

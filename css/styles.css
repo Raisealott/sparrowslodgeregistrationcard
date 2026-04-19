@@ -244,6 +244,26 @@ html, body {
 .badge-current  { border-color: #000; color: #000; }
 .badge-previous { border-color: #aaa; color: #aaa; }
 
+.entry-delete-btn {
+  margin-top: 6px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: #9a0000;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.entry-delete-btn:active {
+  opacity: 0.65;
+}
+
 .entry-chevron {
   flex-shrink: 0;
   font-size: 20px;
@@ -875,6 +895,102 @@ html, body {
   word-break: break-word;
 }
 
+/* —— Policy slide —— */
+.guest-policy {
+  width: 100%;
+  max-width: none;
+  text-align: left;
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.guest-policy-card {
+  width: 100%;
+  max-width: 620px;
+  margin: 0 auto;
+  border: 2px solid #000;
+  background: #fff;
+  padding: 10px 12px 8px;
+  font-size: 11px;
+  line-height: 1.5;
+  column-count: 1;
+  column-gap: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  overflow-x: hidden;
+  overflow-y: auto;
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.guest-policy-card p {
+  margin: 0 0 10px;
+}
+
+.guest-policy-card p:last-child {
+  margin-bottom: 0;
+}
+
+.policy-choice-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  max-width: 620px;
+  margin: 8px auto 0;
+  flex-shrink: 0;
+}
+
+.policy-choice-btn {
+  min-height: var(--touch);
+  border: 2px solid #000;
+  background: #fff;
+  color: #000;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.policy-choice-btn.selected {
+  background: #000;
+  color: #fff;
+}
+
+.guest-slide[data-qid="policy"] {
+  align-items: stretch;
+  justify-content: flex-start;
+  padding-top: 12px;
+  padding-bottom: 12px;
+  overflow-y: hidden;
+}
+
+.guest-slide[data-qid="policy"] .guest-slide-inner {
+  width: 100%;
+  max-width: 700px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  align-items: stretch;
+}
+
+.guest-policy .gs-label {
+  width: 100%;
+  max-width: 620px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
 /* ── Signature slide ─────────────────────────────────────── */
 
 .guest-sig-slide {
@@ -1004,6 +1120,49 @@ html, body {
   text-align: left;
   padding: 14px 16px;
   min-height: 58px;
+}
+
+.stack-field-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stack-field-row .stack-input {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.contact-prefill-controls {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-bottom: 0;
+  flex: 0 0 auto;
+}
+
+.contact-confirm-btn {
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  font-family: var(--mono);
+  font-size: 20px;
+  font-weight: 400;
+  cursor: pointer;
+  border-radius: 0;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.75;
+}
+
+.contact-confirm-decline {
+  color: #a40000;
+}
+
+.stack-input.is-prefilled {
+  background: #fff;
+  border-color: #000;
 }
 
 /* ── Car brand/model autocomplete dropdown ───────────────── */

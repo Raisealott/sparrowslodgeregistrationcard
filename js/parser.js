@@ -89,21 +89,6 @@ const Parser = (() => {
   }
 
   /**
-   * Room number: short numeric code (1–4 digits) at the start of the table data row,
-   * just before the confirmation number.
-   */
-  function detectRoomNumber(text) {
-    // Pattern: short number then long confirmation number then date
-    let m = text.match(/\b(\d{1,4})\s+(\d{7,12})\s+\d{2}[-\/]\d{2}[-\/]\d{2,4}/);
-    if (m) return { value: m[1], confidence: 'medium' };
-
-    m = text.match(/Room\s+No\.?[:\s]+(\d{1,4})/i);
-    if (m) return { value: m[1], confidence: 'high' };
-
-    return null;
-  }
-
-  /**
    * Number of adults from the table row (digit after room type code).
    */
   function detectAdults(text) {
@@ -149,12 +134,24 @@ const Parser = (() => {
    * Guest email address.
    */
   function detectEmail(text) {
-    let m = text.match(/Email[:\s]+([^\s@]+@[^\s]+\.[^\s,\n]{2,})/i);
+    // Strong signal: explicitly labeled email field
+    let m = text.match(/(?:Guest\s+)?E-?mail[:\s]+([^\s@]+@[^\s]+\.[^\s,\n]{2,})/i);
     if (m) return { value: m[1].trim(), confidence: 'high' };
 
-    // Standalone email anywhere in the text
-    m = text.match(/\b([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})\b/);
-    if (m) return { value: m[1], confidence: 'medium' };
+    // Conservative fallback: only accept emails from lines that look guest-related.
+    // This avoids pulling the hotel's contact email from headers/footers.
+    const lines = text.split(/\r?\n/);
+    const emailRe = /\b([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})\b/;
+    const guestHintRe = /\b(guest|traveler|customer|occupant|contact)\b/i;
+    const hotelHintRe = /\b(hotel|lodge|resort|inn|front\s*desk|website)\b/i;
+
+    for (const line of lines) {
+      const emailMatch = line.match(emailRe);
+      if (!emailMatch) continue;
+      if (!guestHintRe.test(line)) continue;
+      if (hotelHintRe.test(line)) continue;
+      return { value: emailMatch[1], confidence: 'medium' };
+    }
 
     return null;
   }
@@ -177,7 +174,6 @@ const Parser = (() => {
       arrivalDate:        detectArrivalDate(text),
       departureDate:      detectDepartureDate(text),
       roomType:           detectRoomType(text),
-      roomNumber:         detectRoomNumber(text),
       nightlyRate:        detectNightlyRate(text),
       adults:             detectAdults(text),
       email:              detectEmail(text),

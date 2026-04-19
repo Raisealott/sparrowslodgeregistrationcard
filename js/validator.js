@@ -3,12 +3,12 @@
  * Validates parsed field results and assigns a display status to each.
  *
  * Status levels:
- *  'ok'        — value detected with medium or high confidence
- *  'uncertain' — value detected but confidence is low; staff should verify
- *  'missing'   — field not detected at all; staff must fill in manually
+ *  'ok'        - value detected with medium or high confidence
+ *  'uncertain' - value detected but confidence is low; staff should verify
+ *  'missing'   - required field not detected; staff must fill in manually
  *
- * Required fields missing → hasErrors = true (blocks card generation warning)
- * Uncertain fields        → hasWarnings = true (soft warning only)
+ * Required fields missing -> hasErrors = true (blocks card generation warning)
+ * Uncertain fields        -> hasWarnings = true (soft warning only)
  */
 const Validator = (() => {
 
@@ -29,10 +29,10 @@ const Validator = (() => {
     'arrivalDate',
     'departureDate',
     'roomType',
-    'roomNumber',
     'nightlyRate',
     'adults',
     'email',
+    'phone',
   ];
 
   /** Validate a single parsed field result. */
@@ -40,18 +40,21 @@ const Validator = (() => {
     const hasValue = result && result.value != null && String(result.value).trim() !== '';
 
     if (!hasValue) {
+      // Optional fields stay neutral when empty.
+      if (!REQUIRED.has(key)) {
+        return { status: 'ok', message: '' };
+      }
+
       return {
         status: 'missing',
-        message: REQUIRED.has(key)
-          ? 'Required — please enter manually'
-          : 'Not detected — leave blank or enter manually',
+        message: 'Required - please enter manually',
       };
     }
 
     if (result.confidence === 'low') {
       return {
         status: 'uncertain',
-        message: 'Detected with low confidence — please verify',
+        message: 'Detected with low confidence - please verify',
       };
     }
 
@@ -60,20 +63,20 @@ const Validator = (() => {
 
   /**
    * Validate all parsed fields at once.
-   * @param {object} parsed — result from Parser.parse()
+   * @param {object} parsed - result from Parser.parse()
    * @returns {{ fields: object, hasErrors: boolean, hasWarnings: boolean }}
    */
   function validateAll(parsed) {
     const fields = {};
-    let hasErrors   = false;
+    let hasErrors = false;
     let hasWarnings = false;
 
     for (const key of ALL_FIELDS) {
       const result = validateField(key, parsed[key]);
       fields[key] = result;
 
-      if (result.status === 'missing' && REQUIRED.has(key)) hasErrors   = true;
-      if (result.status === 'uncertain')                     hasWarnings = true;
+      if (result.status === 'missing' && REQUIRED.has(key)) hasErrors = true;
+      if (result.status === 'uncertain') hasWarnings = true;
     }
 
     return { fields, hasErrors, hasWarnings };
