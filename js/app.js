@@ -25,16 +25,32 @@ const App = (() => {
     document.getElementById('btn-back-upload')?.addEventListener('click', () => goToStep('upload'));
 
     // Card step
-    document.getElementById('btn-edit')?.addEventListener('click', () => goToStep('review'));
+    document.getElementById('btn-edit')?.addEventListener('click', () => {
+      if (_currentId) {
+        const entry = Store.getById(_currentId);
+        if (entry) populateReviewForm(entry.fields);
+      }
+      goToStep('review');
+    });
     document.getElementById('btn-save-draft')?.addEventListener('click', onSaveDraft);
     document.getElementById('btn-hand-to-guest')?.addEventListener('click', onHandToGuest);
     // Dashboard
     document.getElementById('btn-new-registration')?.addEventListener('click', startNewRegistration);
 
+    // Recently deleted toggle
+    document.getElementById('btn-deleted-toggle')?.addEventListener('click', () => {
+      const list    = document.getElementById('list-deleted');
+      const chevron = document.querySelector('#btn-deleted-toggle .deleted-chevron');
+      if (!list) return;
+      list.hidden = !list.hidden;
+      if (chevron) chevron.textContent = list.hidden ? '▾' : '▴';
+    });
+
     // All "← Home" buttons across every step header
     document.querySelectorAll('.btn-go-dashboard').forEach(btn =>
       btn.addEventListener('click', () => { renderDashboard(); goToStep('dashboard'); })
     );
+    window.addEventListener('guestflow:home', () => { renderDashboard(); goToStep('dashboard'); });
 
     // Seed today's date in the dashboard header
     const dateEl = document.getElementById('dashboard-date');
@@ -67,6 +83,7 @@ const App = (() => {
 
     renderGroup('list-current',  current,  'No current registrations');
     renderGroup('list-previous', previous, 'No previous entries');
+    renderDeletedGroup();
 
     // Update count badges
     const setBadge = (id, n) => {
@@ -75,6 +92,25 @@ const App = (() => {
     };
     setBadge('count-current',  current.length);
     setBadge('count-previous', previous.length);
+  }
+
+  function renderDeletedGroup() {
+    const deleted = Store.getDeleted();
+    const container = document.getElementById('list-deleted');
+    const countEl   = document.getElementById('count-deleted');
+
+    if (countEl) countEl.textContent = deleted.length > 0 ? `(${deleted.length})` : '';
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (deleted.length === 0) {
+      const empty = document.createElement('div');
+      empty.className   = 'entry-empty';
+      empty.textContent = 'No recently deleted entries';
+      container.appendChild(empty);
+      return;
+    }
+    deleted.forEach(entry => container.appendChild(createDeletedEntryRow(entry)));
   }
 
   function renderGroup(containerId, entries, emptyMessage) {
@@ -109,10 +145,14 @@ const App = (() => {
       f.confirmationNumber ? `#${f.confirmationNumber}` : null,
     ].filter(Boolean).join(' · ');
 
+    const ts = entry.lastModifiedAt || entry.createdAt;
+    const tsLabel = ts ? formatTimestamp(ts) : '';
+
     row.innerHTML = `
       <div class="entry-body">
         <div class="entry-name">${f.guestName || 'Unknown Guest'}</div>
         <div class="entry-meta">${meta || '—'}</div>
+        ${tsLabel ? `<div class="entry-timestamp">${tsLabel}</div>` : ''}
       </div>
       <div class="entry-right">
         <div class="entry-dates">${arrival} – ${departure}</div>
@@ -134,13 +174,43 @@ const App = (() => {
     const deleteBtn = row.querySelector('.entry-delete-btn');
     deleteBtn?.addEventListener('click', e => {
       e.stopPropagation();
-      const ok = window.confirm('Delete this registration entry? This cannot be undone.');
+      const ok = window.confirm('Delete this entry? It will be kept in Recently Deleted for 30 days.');
       if (!ok) return;
-      Store.remove(entry.id);
+      Store.softDelete(entry.id);
       if (_currentId === entry.id) {
         _currentId = null;
         _parsedData = null;
       }
+      renderDashboard();
+    });
+
+    return row;
+  }
+
+  function createDeletedEntryRow(entry) {
+    const f         = entry.fields;
+    const arrival   = formatDateShort(f.arrivalDate);
+    const departure = formatDateShort(f.departureDate);
+    const deletedOn = entry.deletedAt
+      ? new Date(entry.deletedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      : '';
+
+    const row = document.createElement('div');
+    row.className = 'entry-row entry-row-deleted';
+    row.innerHTML = `
+      <div class="entry-body">
+        <div class="entry-name">${f.guestName || 'Unknown Guest'}</div>
+        <div class="entry-meta">Deleted ${deletedOn}</div>
+      </div>
+      <div class="entry-right">
+        <div class="entry-dates">${arrival} – ${departure}</div>
+        <button class="entry-restore-btn" type="button" data-id="${entry.id}">Restore</button>
+      </div>
+    `;
+
+    row.querySelector('.entry-restore-btn')?.addEventListener('click', e => {
+      e.stopPropagation();
+      Store.restore(entry.id);
       renderDashboard();
     });
 
@@ -188,7 +258,7 @@ const App = (() => {
     _currentId  = id;
     _parsedData = { rateLines: entry.rateLines ?? [] };
 
-    renderCard(entry.fields);
+    renderCard(entry.fields, entry);
     updateCardButtons(entry.status);
     goToStep('card');
   }
@@ -248,25 +318,53 @@ const App = (() => {
 
   function onConfirm() {
     const values = readReviewForm();
-    renderCard(values);
+    const existing = _currentId ? Store.getById(_currentId) : null;
+    const merged = { ...(existing?.fields ?? {}), ...values };
+    const now = new Date().toISOString();
 
     // Save or create entry in store (always 'current' on first generate)
     if (_currentId) {
-      Store.update(_currentId, { fields: values, rateLines: _parsedData?.rateLines ?? [] });
+      Store.update(_currentId, { fields: merged, rateLines: _parsedData?.rateLines ?? [], lastModifiedAt: now });
     } else {
       const entry = Store.add({
-        id:          Store.generateId(),
-        status:      'current',
-        createdAt:   new Date().toISOString(),
-        completedAt: null,
-        fields:      values,
-        rateLines:   _parsedData?.rateLines ?? [],
+        id:             Store.generateId(),
+        status:         'current',
+        createdAt:      now,
+        lastModifiedAt: now,
+        completedAt:    null,
+        fields:         merged,
+        rateLines:      _parsedData?.rateLines ?? [],
       });
       _currentId = entry.id;
     }
 
+    const saved = Store.getById(_currentId);
+    renderCard(merged, saved);
+
     updateCardButtons('current');
     goToStep('card');
+  }
+
+  function populateReviewForm(fields) {
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val || '';
+    };
+    set('field-guest-name',   fields.guestName);
+    set('field-confirmation', fields.confirmationNumber);
+    set('field-arrival',      fields.arrivalDate);
+    set('field-departure',    fields.departureDate);
+    set('field-room-type',    fields.roomType);
+    set('field-nightly-rate', fields.nightlyRate);
+    set('field-adults',       fields.adults);
+    set('field-email',        fields.email);
+    set('field-phone',        fields.phone);
+    set('field-car-make',     fields.carMake);
+    set('field-car-model',    fields.carModel);
+    set('field-car-color',    fields.carColor);
+    // Resort fee: set the radio-style select if present
+    const resortEl = document.getElementById('field-resort-fee');
+    if (resortEl) resortEl.value = fields.resortFeeConsent || '';
   }
 
   function readReviewForm() {
@@ -281,6 +379,10 @@ const App = (() => {
       adults:             val('field-adults'),
       email:              val('field-email'),
       phone:              val('field-phone'),
+      carMake:            val('field-car-make'),
+      carModel:           val('field-car-model'),
+      carColor:           val('field-car-color'),
+      resortFeeConsent:   val('field-resort-fee'),
     };
   }
 
@@ -322,9 +424,11 @@ const App = (() => {
     if (entryId) {
       const entry = Store.getById(entryId);
       if (entry) {
+        const now = new Date().toISOString();
         Store.update(entryId, {
-          status:      'previous',
-          completedAt: new Date().toISOString(),
+          status:         'previous',
+          completedAt:    now,
+          lastModifiedAt: now,
           fields: {
             ...entry.fields,
             email:     guestState.email ?? '',
@@ -339,11 +443,13 @@ const App = (() => {
       }
     } else {
       // Guest flow started without a prior entry (direct kiosk check-in)
+      const now = new Date().toISOString();
       Store.add({
-        id:          Store.generateId(),
-        status:      'previous',
-        createdAt:   new Date().toISOString(),
-        completedAt: new Date().toISOString(),
+        id:             Store.generateId(),
+        status:         'previous',
+        createdAt:      now,
+        completedAt:    now,
+        lastModifiedAt: now,
         fields: {
           guestName:          guestState.guestName          || '',
           confirmationNumber: guestState.confirmationNumber || '',
@@ -364,13 +470,25 @@ const App = (() => {
       });
     }
 
+    if (entryId) {
+      const updated = Store.getById(entryId);
+      if (updated) {
+        _currentId  = entryId;
+        _parsedData = { rateLines: updated.rateLines ?? [] };
+        renderCard(updated.fields, updated);
+        updateCardButtons('previous');
+        goToStep('card');
+        return;
+      }
+    }
+
     renderDashboard();
     goToStep('dashboard');
   }
 
   // ─── Card rendering ──────────────────────────────────────────────────────────
 
-  function renderCard(fields) {
+  function renderCard(fields, entry) {
     const set = (id, text) => {
       const el = document.getElementById(id);
       if (el) el.textContent = text || '—';
@@ -388,6 +506,57 @@ const App = (() => {
     const rateNum = FieldNormalizer.normalizeRate(fields.nightlyRate);
     set('card-nightly-rate',
       rateNum !== null ? `${FieldNormalizer.formatRate(rateNum)} USD` : fields.nightlyRate || '—');
+
+    // Timestamps
+    const createdEl  = document.getElementById('card-created-at');
+    const modifiedEl = document.getElementById('card-modified-at');
+    if (createdEl) {
+      createdEl.textContent = entry?.createdAt
+        ? `Submitted ${formatTimestamp(entry.createdAt)}`
+        : '';
+    }
+    if (modifiedEl) {
+      const showModified = entry?.lastModifiedAt && entry.lastModifiedAt !== entry?.createdAt;
+      modifiedEl.textContent = showModified
+        ? `· Last edited ${formatTimestamp(entry.lastModifiedAt)}`
+        : '';
+    }
+
+    // Resort fee consent
+    const resortFeeRow = document.getElementById('card-resort-fee-row');
+    const resortFeeVal = document.getElementById('card-resort-fee-value');
+    if (resortFeeRow && resortFeeVal) {
+      const consent = fields.resortFeeConsent;
+      if (consent === 'Approved' || consent === 'Declined') {
+        resortFeeVal.textContent = consent === 'Approved' ? 'Opted In' : 'Opted Out';
+        resortFeeRow.style.display = '';
+      } else {
+        resortFeeRow.style.display = 'none';
+      }
+    }
+
+    // Vehicle info
+    const carMakeEl  = document.getElementById('card-car-make');
+    const carModelEl = document.getElementById('card-car-model');
+    const carColorEl = document.getElementById('card-car-color');
+    if (carMakeEl)  carMakeEl.value  = fields.carMake  || '';
+    if (carModelEl) carModelEl.value = fields.carModel || '';
+    if (carColorEl) carColorEl.value = fields.carColor || '';
+
+    // Signature
+    const sigLine = document.getElementById('card-signature-line');
+    if (sigLine) {
+      sigLine.innerHTML = '';
+      sigLine.classList.remove('has-signature');
+      if (fields.signature) {
+        const img = document.createElement('img');
+        img.src       = fields.signature;
+        img.alt       = 'Guest signature';
+        img.className = 'card-signature-img';
+        sigLine.appendChild(img);
+        sigLine.classList.add('has-signature');
+      }
+    }
 
     // Rate change lines
     const linesContainer = document.getElementById('card-rate-lines');
@@ -407,6 +576,14 @@ const App = (() => {
   }
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
+
+  function formatTimestamp(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      + ' at '
+      + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
 
   function showBanner(type, message) {
     const el = document.getElementById('validation-banner');

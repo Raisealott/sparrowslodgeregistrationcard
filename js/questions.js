@@ -33,24 +33,15 @@ const Questions = (() => {
       type: 'welcome',
     },
     {
-      id:           'policy',
-      type:         'policy',
-      label:        'Policy & Resort Fee',
-      field:        'resortFeeConsent',
-      required:     true,
-      showInReview: true,
-      reviewLabel:  'Resort Fee',
-    },
-    {
       id:          'contact',
       type:        'stack',
       label:       'Contact Information',
       subLabel:    '',
-      requireOne:  true,   // at least one input must be filled to advance
+      requireOne:  true,
       showInReview: true,
       inputs: [
-        { field: 'email', label: 'Email Address', placeholder: 'your@email.com',   inputType: 'email', reviewLabel: 'Email' },
-        { field: 'phone', label: 'Phone Number',  placeholder: '(760) 555-0100',   inputType: 'tel',   reviewLabel: 'Phone' },
+        { field: 'email', label: 'Email Address', placeholder: 'your@email.com', inputType: 'email', reviewLabel: 'Email' },
+        { field: 'phone', label: 'Phone Number',  placeholder: '(760) 555-0100', inputType: 'tel',   reviewLabel: 'Phone' },
       ],
     },
     {
@@ -68,8 +59,13 @@ const Questions = (() => {
       ],
     },
     {
-      id:   'review',
-      type: 'review',
+      id:           'policy',
+      type:         'policy',
+      label:        'Policy & Resort Fee',
+      field:        'resortFeeConsent',
+      required:     true,
+      showInReview: true,
+      reviewLabel:  'Resort Fee',
     },
     {
       id:   'signature',

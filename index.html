@@ -30,6 +30,8 @@
     <div class="step-body">
       <div class="step-body-inner">
 
+        <h2 class="dashboard-section-heading">Registration Cards</h2>
+
         <!-- Current registrations -->
         <div class="list-group">
           <div class="list-group-header">
@@ -46,6 +48,16 @@
             <span id="count-previous" class="list-group-count"></span>
           </div>
           <div id="list-previous" class="entry-list"></div>
+        </div>
+
+        <!-- Recently deleted -->
+        <div class="list-group">
+          <button class="list-group-header deleted-toggle-header" id="btn-deleted-toggle" type="button">
+            <span class="list-group-title">Recently Deleted</span>
+            <span id="count-deleted" class="list-group-count"></span>
+            <span class="deleted-chevron">▾</span>
+          </button>
+          <div id="list-deleted" class="entry-list" hidden></div>
         </div>
 
       </div>
@@ -255,9 +267,52 @@
             <div class="field-hint" aria-live="polite"></div>
           </div>
 
-          <!-- Breakdown shown when multiple date-range rates are detected -->
+            <!-- Breakdown shown when multiple date-range rates are detected -->
           <div id="rate-lines-display" class="rate-lines-display"
                aria-label="Detected rate breakdown"></div>
+        </section>
+
+        <!-- ── Resort Fee ──────────────────────────────────── -->
+        <section class="review-section">
+          <div class="review-section-title">Resort Fee</div>
+
+          <div class="field-wrapper">
+            <label class="field-label" for="field-resort-fee">Guest Choice</label>
+            <select id="field-resort-fee" class="field-input field-select">
+              <option value="">— Not yet selected —</option>
+              <option value="Approved">Opted In</option>
+              <option value="Declined">Opted Out</option>
+            </select>
+            <div class="field-hint" aria-live="polite"></div>
+          </div>
+        </section>
+
+        <!-- ── Vehicle Information ─────────────────────────── -->
+        <section class="review-section">
+          <div class="review-section-title">Vehicle Information</div>
+
+          <div class="field-row">
+            <div class="field-wrapper">
+              <label class="field-label" for="field-car-make">Make</label>
+              <input id="field-car-make" class="field-input" type="text"
+                     placeholder="e.g. Toyota" autocomplete="off" autocapitalize="words">
+              <div class="field-hint" aria-live="polite"></div>
+            </div>
+
+            <div class="field-wrapper">
+              <label class="field-label" for="field-car-model">Model</label>
+              <input id="field-car-model" class="field-input" type="text"
+                     placeholder="e.g. Camry" autocomplete="off" autocapitalize="words">
+              <div class="field-hint" aria-live="polite"></div>
+            </div>
+
+            <div class="field-wrapper">
+              <label class="field-label" for="field-car-color">Color</label>
+              <input id="field-car-color" class="field-input" type="text"
+                     placeholder="e.g. Silver" autocomplete="off" autocapitalize="words">
+              <div class="field-hint" aria-live="polite"></div>
+            </div>
+          </div>
         </section>
 
       </div><!-- /step-body-inner -->
@@ -278,8 +333,6 @@
 
     <header class="step-header">
       <button class="btn-go-dashboard">← Home</button>
-      <div class="hotel-name">Sparrows Lodge</div>
-      <div class="hotel-sub">Palm Springs</div>
     </header>
 
     <div class="step-body">
@@ -293,28 +346,15 @@
 
           <!-- Hotel header -->
           <div class="card-header">
-            <div class="card-logo" aria-hidden="true">
-              <!--
-                Sparrows Lodge logo placeholder.
-                Replace this SVG with an <img src="assets/logo.svg"> when the
-                logo asset is available.
-              -->
-              <svg width="52" height="36" viewBox="0 0 52 36" fill="none"
-                   xmlns="http://www.w3.org/2000/svg">
-                <path d="M26 3 C22 3 17 7 17 13 C17 21 26 33 26 33 C26 33 35 21 35 13 C35 7 30 3 26 3Z"
-                      stroke="#2b4338" stroke-width="1.4" fill="none"/>
-                <path d="M19 15 L26 10 L33 15"
-                      stroke="#2b4338" stroke-width="1.4" fill="none" stroke-linecap="round"/>
-                <line x1="26" y1="10" x2="26" y2="24"
-                      stroke="#2b4338" stroke-width="1" stroke-dasharray="2 2"/>
-              </svg>
+            <div class="card-logo">
+              <img src="assets/logo.png" alt="Sparrows Lodge logo" class="brand-logo">
             </div>
-            <div class="card-hotel-name">Sparrows Lodge</div>
-            <div class="card-hotel-sub">Palm Springs</div>
-            <div class="card-hotel-address">
-              1330 E. Palm Canyon Drive &middot; Palm Springs, California 92264<br>
-              (760) 327-2300 &middot; hello@sparrowslodge.com &middot; sparrowslodge.com
-            </div>
+          </div>
+
+          <!-- Submission log -->
+          <div class="card-timestamp-bar">
+            <span id="card-created-at"></span>
+            <span id="card-modified-at" class="card-modified-at"></span>
           </div>
 
           <!-- Guest information -->
@@ -358,15 +398,18 @@
                   <td id="card-room-type"></td>
                   <td id="card-adults"></td>
                   <td style="text-align: center">
-                    <!-- Car info collected at check-in -->
                     <div class="car-inputs">
                       <div class="car-input-group">
                         <label class="car-input-label">Make</label>
-                        <input type="text" class="car-input" aria-label="Car make">
+                        <input type="text" class="car-input" id="card-car-make" aria-label="Car make">
                       </div>
                       <div class="car-input-group">
                         <label class="car-input-label">Model</label>
-                        <input type="text" class="car-input" aria-label="Car model">
+                        <input type="text" class="car-input" id="card-car-model" aria-label="Car model">
+                      </div>
+                      <div class="car-input-group">
+                        <label class="car-input-label">Color</label>
+                        <input type="text" class="car-input" id="card-car-color" aria-label="Car color">
                       </div>
                     </div>
                   </td>
@@ -380,24 +423,29 @@
           <div class="policy-section">
             <div class="policy-greeting">Greetings from Sparrow's Lodge!</div>
             <div class="policy-text">
-              <p>Sparrow's Lodge has a 48-hour cancellation policy. In the event of an early departure, one night's room and tax will be applied to your bill. Payment of all charges must be secured at check-in. Sparrow's Lodge offers physical room keys — you may be charged $100 for any lost keys.</p>
+              <p>Sparrow's Lodge has a <strong>48-hour cancellation policy. In the event of an early departure, one night's room and tax will be applied to your bill. Payment of all charges must be secured at check-in.</strong> Sparrow's Lodge offers physical room keys &mdash; <strong>you may be charged $100 for any lost keys.</strong></p>
               <p>Payment may be made by acceptable credit, debit card, or other management-approved billing methods. Guests paying by credit card acknowledge that their card will be preauthorized for all room and tax charges. Additional authorization is taken to secure guest incidental charges. This includes incidentals or guests whose room and tax charges are being paid by a third party. Any unused authorization is released at the time of check-out. Please note that your financial institution will determine how quickly the authorization is released back to your account.</p>
-              <p>For your convenience, Sparrow's Lodge will create a running account for your charges made at the lobby bar/restaurant. Unless instructed otherwise, a 20% auto gratuity will be automatically added to your account.</p>
-              <p>Pool Hours: 6 am – 11 pm | Flotation devices, any type of ball, and/or amplified music are not permitted in the pool area. Pool use is exclusive to registered guests. There is no glass by the pool at any time. All outside Food and Beverages are strictly prohibited in public areas.</p>
+              <p>For your convenience, Sparrow's Lodge will create a running account for your charges made at the lobby bar/restaurant. Unless instructed otherwise, <strong>a 20% auto gratuity will be automatically added to your account.</strong></p>
+              <p><strong>Pool Hours: 6 am – 11 pm | Flotation devices, any type of ball, and/or amplified music are not permitted in the pool area.</strong> Pool use is exclusive to registered guests. <strong>There is no glass by the pool at any time. All outside Food and Beverages are strictly prohibited in public areas.</strong></p>
               <p>Sparrow's Lodge is not responsible for property lost, stolen, or left behind on the property. Sparrow's Lodge offers outdoor parking for guests' convenience and is not responsible for any lost or stolen items from vehicles or damage to vehicles parked on the property.</p>
-              <p>Sparrow's Lodge is 100% non-smoking. A smoking and cleaning fee of $250 will be charged to any room where evidence of smoking is found.</p>
-              <p>We welcome dogs less than 40 pounds with a one-time fee of $100 per stay, per dog. All dogs are required to be on a leash at all times.</p>
-              <p>For your convenience and to enhance your guest experience, we welcome you to participate in the daily resort fee upon arrival. The resort fee includes access to the property Wi-Fi, the Sparrows Lodge breakfast, overnight self-parking, and more. Valued at $75, these amenities are available to our guests for $40 per night.</p>
+              <p><strong>Sparrow's Lodge is 100% non-smoking. A smoking and cleaning fee of $250 will be charged to any room where evidence of smoking is found.</strong></p>
+              <p>We welcome dogs less than 40 pounds with <strong>a one-time fee of $100 per stay, per dog. All dogs are required to be on a leash at all times.</strong></p>
+              <p>For your convenience and to enhance your guest experience, we welcome you to participate in the daily resort fee upon arrival. The resort fee includes access to the property Wi-Fi, the Sparrows Lodge breakfast, overnight self-parking, and more. <strong>Valued at $75, these amenities are available to our guests for $40 per night.</strong></p>
             </div>
-            <div class="policy-initials">
-              Initials <div class="initials-line" aria-label="Initials line"></div>
+            <div class="resort-fee-row" id="card-resort-fee-row" style="display:none">
+              <span class="resort-fee-label">Resort Fee</span>
+              <span class="resort-fee-value" id="card-resort-fee-value"></span>
             </div>
           </div>
 
           <!-- Guest signature -->
           <div class="signature-section">
             <div class="signature-label">Guest Signature</div>
-            <div class="signature-line" aria-label="Signature line"></div>
+            <div class="signature-line" id="card-signature-line" aria-label="Signature line"></div>
+            <div class="card-hotel-address">
+              1330 E. Palm Canyon Drive &middot; Palm Springs, California 92264<br>
+              (760) 327-2300 &middot; hello@sparrowslodge.com &middot; sparrowslodge.com
+            </div>
           </div>
 
         </article><!-- /registration-card -->
@@ -431,6 +479,9 @@
 
     <!-- Fixed navigation bar -->
     <div class="guest-nav">
+      <button id="guest-welcome-art" class="guest-welcome-art" type="button" aria-label="Home">
+        <img src="assets/logo birds only.png" alt="" class="guest-welcome-art-img">
+      </button>
       <button id="guest-btn-back" type="button">← Back</button>
       <button id="guest-btn-next" type="button">Continue →</button>
     </div>
@@ -460,3 +511,5 @@
 
 </body>
 </html>
+
+

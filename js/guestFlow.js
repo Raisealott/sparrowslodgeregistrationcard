@@ -255,8 +255,6 @@ const GuestFlow = (() => {
     const firstName = name.trim().split(/\s+/)[0] || '';
     return `
       <div class="guest-slide-inner guest-welcome">
-        <div class="gw-hotel">SPARROWS LODGE</div>
-        <div class="gw-hotel-sub">PALM SPRINGS</div>
         <div class="gw-greeting">
           ${firstName ? `Welcome,<br><strong>${_esc(firstName)}.</strong>` : 'Welcome.'}
         </div>
@@ -357,22 +355,22 @@ const GuestFlow = (() => {
 
     return `
       <div class="guest-slide-inner guest-policy">
-        <div class="gs-label">Greetings from Sparrow's Lodge!</div>
-
         <div class="guest-policy-card">
-          <p>Sparrow's Lodge has a 48-hour cancellation policy. In the event of an early departure, one night's room and tax will be applied to your bill. Payment of all charges must be secured at check-in. Sparrow's Lodge offers physical room keys - you may be charged $100 for any lost keys.</p>
-          <p>Payment may be made by acceptable credit, debit card, or other management-approved billing methods. Guests paying by credit card acknowledge that their card will be preauthorized for all room and tax charges. Additional authorization is taken to secure guest incidental charges. This includes incidentals or guests whose room and tax charges are being paid by a third party. Any unused authorization is released at the time of check-out. Please note that your financial institution will determine how quickly the authorization is released back to your account.</p>
-          <p>For your convenience, Sparrow's Lodge will create a running account for your charges made at the lobby bar/restaurant. Unless instructed otherwise, a 20% auto gratuity will be automatically added to your account.</p>
-          <p>Pool Hours: 6 am - 11 pm | Flotation devices, any type of ball, and/or amplified music are not permitted in the pool area. Pool use is exclusive to registered guests. There is no glass by the pool at any time. All outside Food and Beverages are strictly prohibited in public areas.</p>
-          <p>Sparrow's Lodge is not responsible for property lost, stolen, or left behind on the property. Sparrow's Lodge offers outdoor parking for guests' convenience and is not responsible for any lost or stolen items from vehicles or damage to vehicles parked on the property.</p>
-          <p>Sparrow's Lodge is 100% non-smoking. A smoking and cleaning fee of $250 will be charged to any room where evidence of smoking is found.</p>
-          <p>We welcome dogs less than 40 pounds with a one-time fee of $100 per stay, per dog. All dogs are required to be on a leash at all times.</p>
-          <p>For your convenience and to enhance your guest experience, we welcome you to participate in the daily resort fee upon arrival. The resort fee includes access to the property Wi-Fi, the Sparrows Lodge breakfast, overnight self-parking, and more. Valued at $75, these amenities are available to our guests for $40 per night.</p>
-        </div>
-
-        <div class="policy-choice-row">
-          <button class="policy-choice-btn${isApproved ? ' selected' : ''}" data-policy-choice="Approved" type="button">Approve</button>
-          <button class="policy-choice-btn${isDeclined ? ' selected' : ''}" data-policy-choice="Declined" type="button">Decline</button>
+          <div class="policy-copy">
+            <div class="policy-box-title">Greetings from Sparrow's Lodge!</div>
+            <p>Sparrow's Lodge has a <strong>48-hour cancellation policy. In the event of an early departure, one night's room and tax will be applied to your bill. Payment of all charges must be secured at check-in.</strong> Sparrow's Lodge offers physical room keys - <strong>you may be charged $100 for any lost keys.</strong></p>
+            <p>Payment may be made by acceptable credit, debit card, or other management-approved billing methods. Guests paying by credit card acknowledge that their card will be preauthorized for all room and tax charges. Additional authorization is taken to secure guest incidental charges. This includes incidentals or guests whose room and tax charges are being paid by a third party. Any unused authorization is released at the time of check-out. Please note that your financial institution will determine how quickly the authorization is released back to your account.</p>
+            <p>For your convenience, Sparrow's Lodge will create a running account for your charges made at the lobby bar/restaurant. Unless instructed otherwise, <strong>a 20% auto gratuity will be automatically added to your account.</strong></p>
+            <p><strong>Pool Hours: 6 am - 11 pm | Flotation devices, any type of ball, and/or amplified music are not permitted in the pool area.</strong> Pool use is exclusive to registered guests. <strong>There is no glass by the pool at any time. All outside Food and Beverages are strictly prohibited in public areas.</strong></p>
+            <p>Sparrow's Lodge is not responsible for property lost, stolen, or left behind on the property. Sparrow's Lodge offers outdoor parking for guests' convenience and is not responsible for any lost or stolen items from vehicles or damage to vehicles parked on the property.</p>
+            <p><strong>Sparrow's Lodge is 100% non-smoking. A smoking and cleaning fee of $250 will be charged to any room where evidence of smoking is found.</strong></p>
+            <p>We welcome dogs less than 40 pounds with <strong>a one-time fee of $100 per stay, per dog. All dogs are required to be on a leash at all times.</strong></p>
+            <p>For your convenience and to enhance your guest experience, we welcome you to participate in the daily resort fee upon arrival. The resort fee includes access to the property Wi-Fi, the Sparrows Lodge breakfast, overnight self-parking, and more. <strong>Valued at $75, these amenities are available to our guests for $40 per night.</strong></p>
+          </div>
+          <div class="policy-choice-row">
+            <button class="policy-choice-btn${isApproved ? ' selected' : ''}" data-policy-choice="Approved" type="button">Opt In - welcome drink, breakfast, bikes, smores, wifi &amp; more ($40 per night)</button>
+            <button class="policy-choice-btn${isDeclined ? ' selected' : ''}" data-policy-choice="Declined" type="button">Opt Out - welcome drink, breakfast, bikes, smores, wifi &amp; more</button>
+          </div>
         </div>
       </div>`;
   }
@@ -500,14 +498,12 @@ const GuestFlow = (() => {
     return `
       <div class="guest-slide-inner guest-sig-slide">
         <div class="gs-label">Signature</div>
-        <p class="gs-sub">By signing below you agree to Sparrows Lodge hotel policies.</p>
         <div class="sig-wrap">
           <canvas id="sig-canvas" class="sig-canvas" aria-label="Signature pad"></canvas>
-          <div class="sig-baseline">
-            <span class="sig-hint">sign above</span>
-          </div>
+          <div class="sig-baseline"></div>
         </div>
         <button class="sig-clear-btn" type="button">Clear</button>
+        <p class="gs-sub sig-agreement">By signing above you agree to Sparrows Lodge hotel policies.</p>
       </div>`;
   }
 
@@ -539,9 +535,12 @@ const GuestFlow = (() => {
     const q       = _getFlow()[_index];
     const backBtn = document.getElementById('guest-btn-back');
     const nextBtn = document.getElementById('guest-btn-next');
+    const artSlot = document.getElementById('guest-welcome-art');
     if (!backBtn || !nextBtn) return;
 
-    backBtn.style.visibility = (_index === 0 || q.type === 'complete') ? 'hidden' : 'visible';
+    const showBack = !(_index === 0 || q.type === 'complete');
+    backBtn.style.display = showBack ? '' : 'none';
+    if (artSlot) artSlot.style.display = (q.type === 'welcome') ? 'flex' : 'none';
 
     const labels = {
       welcome:   'Begin Check-In  →',
@@ -597,6 +596,7 @@ const GuestFlow = (() => {
   function _bindNav() {
     const nb = document.getElementById('guest-btn-next');
     const bb = document.getElementById('guest-btn-back');
+    const art = document.getElementById('guest-welcome-art');
 
     // Clone to remove any prior listeners
     if (nb) {
@@ -609,6 +609,13 @@ const GuestFlow = (() => {
       bb.parentNode.replaceChild(fresh, bb);
       fresh.addEventListener('click', back);
     }
+    if (art) {
+      const fresh = art.cloneNode(true);
+      art.parentNode.replaceChild(fresh, art);
+      fresh.addEventListener('click', () => {
+        window.dispatchEvent(new CustomEvent('guestflow:home'));
+      });
+    }
   }
 
   // ─── Car autocomplete ─────────────────────────────────────────
@@ -618,6 +625,7 @@ const GuestFlow = (() => {
     dropdown.className = 'car-suggestions';
     dropdown.hidden    = true;
     input.parentElement.appendChild(dropdown);
+    let suppressNextInputDropdown = false;
 
     function getSuggestions(val) {
       if (suggestType === 'carBrand') return CarData.suggestBrands(val);
@@ -642,6 +650,7 @@ const GuestFlow = (() => {
           e.preventDefault(); // keep focus on input; fires before blur
           input.value     = item.textContent;
           dropdown.hidden = true;
+          suppressNextInputDropdown = true;
           if (suggestType === 'carBrand') {
             const modelInput = slideEl.querySelector('[data-field="carModel"]');
             if (modelInput) modelInput.value = '';
@@ -651,7 +660,13 @@ const GuestFlow = (() => {
       });
     }
 
-    input.addEventListener('input', () => showDropdown(input.value.trim()));
+    input.addEventListener('input', () => {
+      if (suppressNextInputDropdown) {
+        suppressNextInputDropdown = false;
+        return;
+      }
+      showDropdown(input.value.trim());
+    });
     input.addEventListener('focus', () => { if (input.value.trim()) showDropdown(input.value.trim()); });
     input.addEventListener('blur',  () => setTimeout(() => { dropdown.hidden = true; }, 200));
   }
@@ -668,3 +683,4 @@ const GuestFlow = (() => {
 
   return { start, next, back };
 })();
+
