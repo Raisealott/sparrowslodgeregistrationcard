@@ -2,10 +2,10 @@
  * app.js
  * Main controller — manages step navigation and entry lifecycle.
  *
- * Steps:  dashboard → upload → processing → review → card
+ * Steps:  login → dashboard → upload → processing → review → card → guest
  *
  * Entry lifecycle:
- *   "Generate Card" → saved to store as 'current'
+ *   "Generate Card" → saved to DB as 'current'
  *   "Complete"      → status updated to 'previous', back to dashboard
  *   "Save & Close"  → stays 'current', back to dashboard
  *   Tap dashboard row → open card for that entry
@@ -13,11 +13,12 @@
 const App = (() => {
 
   let _parsedData    = null;  // PDF parse result (holds rateLines)
-  let _currentId     = null;  // store ID of the entry being viewed
+  let _currentId     = null;  // DB id of the entry being viewed
+  let _unsubscribe   = null;  // real-time subscription cleanup
 
-  // ─── Init ────────────────────────────────────────────────────────────────────
+  // ─── Init ─────────────────────────────────────────────────────────────────
 
-  function init() {
+  async function init() {
     Uploader.init(onFileSelected);
 
     // Review step
@@ -25,17 +26,19 @@ const App = (() => {
     document.getElementById('btn-back-upload')?.addEventListener('click', () => goToStep('upload'));
 
     // Card step
-    document.getElementById('btn-edit')?.addEventListener('click', () => {
+    document.getElementById('btn-edit')?.addEventListener('click', async () => {
       if (_currentId) {
-        const entry = Store.getById(_currentId);
+        const entry = await DB.getById(_currentId);
         if (entry) populateReviewForm(entry.fields);
       }
       goToStep('review');
     });
     document.getElementById('btn-save-draft')?.addEventListener('click', onSaveDraft);
     document.getElementById('btn-hand-to-guest')?.addEventListener('click', onHandToGuest);
+
     // Dashboard
     document.getElementById('btn-new-registration')?.addEventListener('click', startNewRegistration);
+    document.getElementById('btn-sign-out')?.addEventListener('click', onSignOut);
 
     // Recently deleted toggle
     document.getElementById('btn-deleted-toggle')?.addEventListener('click', () => {
@@ -46,11 +49,38 @@ const App = (() => {
       if (chevron) chevron.textContent = list.hidden ? '▾' : '▴';
     });
 
-    // All "← Home" buttons across every step header
+    // All "← Home" buttons
     document.querySelectorAll('.btn-go-dashboard').forEach(btn =>
       btn.addEventListener('click', () => { renderDashboard(); goToStep('dashboard'); })
     );
     window.addEventListener('guestflow:home', () => { renderDashboard(); goToStep('dashboard'); });
+
+    // Login form
+    document.getElementById('login-form')?.addEventListener('submit', onLoginSubmit);
+
+    // Auth: restore session or show login
+    const session = await Auth.init();
+    if (session) {
+      await _onAuthenticated();
+    } else {
+      goToStep('login');
+    }
+
+    // Listen for future auth changes (e.g., session expiry)
+    Auth.onAuthChange(async (event) => {
+      if (event === 'SIGNED_OUT') {
+        if (_unsubscribe) { _unsubscribe(); _unsubscribe = null; }
+        goToStep('login');
+      }
+    });
+  }
+
+  async function _onAuthenticated() {
+    // Update property name in header
+    const property = Auth.getProperty();
+    document.querySelectorAll('.hotel-name').forEach(el => {
+      if (property?.name) el.textContent = property.name;
+    });
 
     // Seed today's date in the dashboard header
     const dateEl = document.getElementById('dashboard-date');
@@ -59,11 +89,44 @@ const App = (() => {
         { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
     }
 
-    renderDashboard();
+    await renderDashboard();
     goToStep('dashboard');
+
+    // Real-time sync: re-render dashboard whenever another device makes a change
+    _unsubscribe = DB.subscribeToChanges(() => renderDashboard());
   }
 
-  // ─── Step navigation ─────────────────────────────────────────────────────────
+  // ─── Auth ──────────────────────────────────────────────────────────────────
+
+  async function onLoginSubmit(e) {
+    e.preventDefault();
+    const email    = document.getElementById('login-email')?.value?.trim() ?? '';
+    const password = document.getElementById('login-password')?.value ?? '';
+    const errorEl  = document.getElementById('login-error');
+    const btn      = document.getElementById('btn-login');
+
+    if (errorEl) errorEl.hidden = true;
+    if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
+
+    const { error } = await Auth.signIn(email, password);
+
+    if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
+
+    if (error) {
+      if (errorEl) { errorEl.textContent = error; errorEl.hidden = false; }
+      return;
+    }
+
+    await _onAuthenticated();
+  }
+
+  async function onSignOut() {
+    if (_unsubscribe) { _unsubscribe(); _unsubscribe = null; }
+    await Auth.signOut();
+    goToStep('login');
+  }
+
+  // ─── Step navigation ──────────────────────────────────────────────────────
 
   function goToStep(name) {
     document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
@@ -74,18 +137,17 @@ const App = (() => {
     }
   }
 
-  // ─── Dashboard ───────────────────────────────────────────────────────────────
+  // ─── Dashboard ────────────────────────────────────────────────────────────
 
-  function renderDashboard() {
-    const all      = Store.getAll();
+  async function renderDashboard() {
+    const all      = await DB.getAll();
     const current  = all.filter(e => e.status === 'current');
     const previous = all.filter(e => e.status === 'previous');
 
     renderGroup('list-current',  current,  'No current registrations');
     renderGroup('list-previous', previous, 'No previous entries');
-    renderDeletedGroup();
+    await renderDeletedGroup();
 
-    // Update count badges
     const setBadge = (id, n) => {
       const el = document.getElementById(id);
       if (el) el.textContent = n > 0 ? `(${n})` : '';
@@ -94,10 +156,10 @@ const App = (() => {
     setBadge('count-previous', previous.length);
   }
 
-  function renderDeletedGroup() {
-    const deleted = Store.getDeleted();
-    const container = document.getElementById('list-deleted');
-    const countEl   = document.getElementById('count-deleted');
+  async function renderDeletedGroup() {
+    const deleted    = await DB.getDeleted();
+    const container  = document.getElementById('list-deleted');
+    const countEl    = document.getElementById('count-deleted');
 
     if (countEl) countEl.textContent = deleted.length > 0 ? `(${deleted.length})` : '';
     if (!container) return;
@@ -172,16 +234,16 @@ const App = (() => {
     });
 
     const deleteBtn = row.querySelector('.entry-delete-btn');
-    deleteBtn?.addEventListener('click', e => {
+    deleteBtn?.addEventListener('click', async e => {
       e.stopPropagation();
       const ok = window.confirm('Delete this entry? It will be kept in Recently Deleted for 30 days.');
       if (!ok) return;
-      Store.softDelete(entry.id);
+      await DB.softDelete(entry.id);
       if (_currentId === entry.id) {
         _currentId = null;
         _parsedData = null;
       }
-      renderDashboard();
+      await renderDashboard();
     });
 
     return row;
@@ -208,16 +270,15 @@ const App = (() => {
       </div>
     `;
 
-    row.querySelector('.entry-restore-btn')?.addEventListener('click', e => {
+    row.querySelector('.entry-restore-btn')?.addEventListener('click', async e => {
       e.stopPropagation();
-      Store.restore(entry.id);
-      renderDashboard();
+      await DB.restore(entry.id);
+      await renderDashboard();
     });
 
     return row;
   }
 
-  /** "MM/DD/YYYY" → "Feb 22" */
   function formatDateShort(dateStr) {
     if (!dateStr) return '—';
     const normalized = FieldNormalizer.normalizeDate(dateStr) ?? dateStr;
@@ -229,11 +290,11 @@ const App = (() => {
     return `${months[m] ?? ''} ${d}`;
   }
 
-  // ─── Start new registration ───────────────────────────────────────────────────
+  // ─── Start new registration ───────────────────────────────────────────────
 
   function startNewRegistration() {
-    _parsedData   = null;
-    _currentId    = null;
+    _parsedData = null;
+    _currentId  = null;
     clearReviewForm();
     goToStep('upload');
   }
@@ -249,10 +310,10 @@ const App = (() => {
     if (banner) banner.style.display = 'none';
   }
 
-  // ─── Open existing entry from dashboard ──────────────────────────────────────
+  // ─── Open existing entry from dashboard ──────────────────────────────────
 
-  function openEntry(id) {
-    const entry = Store.getById(id);
+  async function openEntry(id) {
+    const entry = await DB.getById(id);
     if (!entry) return;
 
     _currentId  = id;
@@ -279,7 +340,7 @@ const App = (() => {
     }
   }
 
-  // ─── PDF pipeline ────────────────────────────────────────────────────────────
+  // ─── PDF pipeline ─────────────────────────────────────────────────────────
 
   async function onFileSelected(file) {
     goToStep('processing');
@@ -314,33 +375,30 @@ const App = (() => {
     }
   }
 
-  // ─── Review → Card ───────────────────────────────────────────────────────────
+  // ─── Review → Card ────────────────────────────────────────────────────────
 
-  function onConfirm() {
-    const values = readReviewForm();
-    const existing = _currentId ? Store.getById(_currentId) : null;
-    const merged = { ...(existing?.fields ?? {}), ...values };
-    const now = new Date().toISOString();
+  async function onConfirm() {
+    const values   = readReviewForm();
+    const existing = _currentId ? await DB.getById(_currentId) : null;
+    const merged   = { ...(existing?.fields ?? {}), ...values };
+    const now      = new Date().toISOString();
 
-    // Save or create entry in store (always 'current' on first generate)
     if (_currentId) {
-      Store.update(_currentId, { fields: merged, rateLines: _parsedData?.rateLines ?? [], lastModifiedAt: now });
+      await DB.update(_currentId, { fields: merged, rateLines: _parsedData?.rateLines ?? [] });
     } else {
-      const entry = Store.add({
-        id:             Store.generateId(),
-        status:         'current',
-        createdAt:      now,
-        lastModifiedAt: now,
-        completedAt:    null,
-        fields:         merged,
-        rateLines:      _parsedData?.rateLines ?? [],
+      const entry = await DB.add({
+        id:          DB.generateId(),
+        status:      'current',
+        createdAt:   now,
+        completedAt: null,
+        fields:      merged,
+        rateLines:   _parsedData?.rateLines ?? [],
       });
       _currentId = entry.id;
     }
 
-    const saved = Store.getById(_currentId);
+    const saved = await DB.getById(_currentId);
     renderCard(merged, saved);
-
     updateCardButtons('current');
     goToStep('card');
   }
@@ -362,7 +420,6 @@ const App = (() => {
     set('field-car-make',     fields.carMake);
     set('field-car-model',    fields.carModel);
     set('field-car-color',    fields.carColor);
-    // Resort fee: set the radio-style select if present
     const resortEl = document.getElementById('field-resort-fee');
     if (resortEl) resortEl.value = fields.resortFeeConsent || '';
   }
@@ -386,70 +443,67 @@ const App = (() => {
     };
   }
 
-  // ─── Card actions ─────────────────────────────────────────────────────────────
+  // ─── Card actions ─────────────────────────────────────────────────────────
 
   function onSaveDraft() {
     renderDashboard();
     goToStep('dashboard');
   }
 
-  function onHandToGuest() {
-    const entry = _currentId ? Store.getById(_currentId) : null;
+  async function onHandToGuest() {
+    const entry = _currentId ? await DB.getById(_currentId) : null;
 
-    // Reopen path: if this was a completed entry, move it back to current first
     if (entry?.status === 'previous') {
-      Store.update(_currentId, { status: 'current', completedAt: null });
+      await DB.update(_currentId, { status: 'current', completedAt: null });
     }
 
     const fields = entry?.fields ?? {};
     const prefill = {
-      guestName:    fields.guestName    || '',
-      email:        fields.email        || '',
-      phone:        fields.phone        || '',
+      guestName:        fields.guestName        || '',
+      email:            fields.email            || '',
+      phone:            fields.phone            || '',
       resortFeeConsent: fields.resortFeeConsent || '',
-      arrivalDate:  fields.arrivalDate  || '',
-      departureDate: fields.departureDate || '',
-      roomType:     fields.roomType     || '',
-      nightlyRate:  fields.nightlyRate  || '',
-      carMake:      fields.carMake      || '',
-      carModel:     fields.carModel     || '',
-      carColor:     fields.carColor     || '',
+      arrivalDate:      fields.arrivalDate      || '',
+      departureDate:    fields.departureDate    || '',
+      roomType:         fields.roomType         || '',
+      nightlyRate:      fields.nightlyRate      || '',
+      carMake:          fields.carMake          || '',
+      carModel:         fields.carModel         || '',
+      carColor:         fields.carColor         || '',
     };
 
     GuestFlow.start(prefill, _currentId, onGuestFlowComplete);
     goToStep('guest');
   }
 
-  function onGuestFlowComplete(guestState, entryId) {
+  async function onGuestFlowComplete(guestState, entryId) {
+    const now = new Date().toISOString();
+
     if (entryId) {
-      const entry = Store.getById(entryId);
+      const entry = await DB.getById(entryId);
       if (entry) {
-        const now = new Date().toISOString();
-        Store.update(entryId, {
-          status:         'previous',
-          completedAt:    now,
-          lastModifiedAt: now,
+        await DB.update(entryId, {
+          status:      'previous',
+          completedAt: now,
+          signature:   guestState.signature || null,
           fields: {
             ...entry.fields,
-            email:     guestState.email ?? '',
-            phone:     guestState.phone ?? '',
+            email:            guestState.email            ?? '',
+            phone:            guestState.phone            ?? '',
             resortFeeConsent: guestState.resortFeeConsent || '',
-            carMake:   guestState.carMake   || '',
-            carModel:  guestState.carModel  || '',
-            carColor:  guestState.carColor  || '',
-            signature: guestState.signature || null,
+            carMake:          guestState.carMake          || '',
+            carModel:         guestState.carModel         || '',
+            carColor:         guestState.carColor         || '',
           },
         });
       }
     } else {
-      // Guest flow started without a prior entry (direct kiosk check-in)
-      const now = new Date().toISOString();
-      Store.add({
-        id:             Store.generateId(),
-        status:         'previous',
-        createdAt:      now,
-        completedAt:    now,
-        lastModifiedAt: now,
+      await DB.add({
+        id:          DB.generateId(),
+        status:      'previous',
+        createdAt:   now,
+        completedAt: now,
+        signature:   guestState.signature || null,
         fields: {
           guestName:          guestState.guestName          || '',
           confirmationNumber: guestState.confirmationNumber || '',
@@ -464,14 +518,13 @@ const App = (() => {
           carMake:            guestState.carMake            || '',
           carModel:           guestState.carModel           || '',
           carColor:           guestState.carColor           || '',
-          signature:          guestState.signature          || null,
         },
         rateLines: [],
       });
     }
 
     if (entryId) {
-      const updated = Store.getById(entryId);
+      const updated = await DB.getById(entryId);
       if (updated) {
         _currentId  = entryId;
         _parsedData = { rateLines: updated.rateLines ?? [] };
@@ -482,11 +535,11 @@ const App = (() => {
       }
     }
 
-    renderDashboard();
+    await renderDashboard();
     goToStep('dashboard');
   }
 
-  // ─── Card rendering ──────────────────────────────────────────────────────────
+  // ─── Card rendering ───────────────────────────────────────────────────────
 
   function renderCard(fields, entry) {
     const set = (id, text) => {
@@ -543,18 +596,18 @@ const App = (() => {
     if (carModelEl) carModelEl.value = fields.carModel || '';
     if (carColorEl) carColorEl.value = fields.carColor || '';
 
-    // Signature
+    // Signature — stroke data lives at entry.signature (top-level column)
     const sigLine = document.getElementById('card-signature-line');
     if (sigLine) {
       sigLine.innerHTML = '';
       sigLine.classList.remove('has-signature');
-      if (fields.signature) {
-        const img = document.createElement('img');
-        img.src       = fields.signature;
-        img.alt       = 'Guest signature';
-        img.className = 'card-signature-img';
-        sigLine.appendChild(img);
+      const strokes = entry?.signature;
+      if (strokes && strokes.length) {
+        const canvas = document.createElement('canvas');
+        canvas.className = 'card-signature-img';
+        sigLine.appendChild(canvas);
         sigLine.classList.add('has-signature');
+        requestAnimationFrame(() => _replaySignature(canvas, strokes));
       }
     }
 
@@ -575,7 +628,28 @@ const App = (() => {
     }
   }
 
-  // ─── Helpers ─────────────────────────────────────────────────────────────────
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+
+  function _replaySignature(canvas, strokes) {
+    if (!strokes || !strokes.length) return;
+    const dpr  = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width  = Math.round(rect.width  * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth   = 2.5;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    strokes.forEach(stroke => {
+      if (!stroke.length) return;
+      ctx.beginPath();
+      ctx.moveTo(stroke[0].x, stroke[0].y);
+      for (let i = 1; i < stroke.length; i++) ctx.lineTo(stroke[i].x, stroke[i].y);
+      ctx.stroke();
+    });
+  }
 
   function formatTimestamp(iso) {
     if (!iso) return '';

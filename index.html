@@ -17,9 +17,35 @@
 <div class="app">
 
   <!-- ══════════════════════════════════════════════════════
+       STEP — LOGIN
+       ══════════════════════════════════════════════════════ -->
+  <div id="step-login" class="step">
+    <div class="login-wrap">
+      <div class="login-logo">Sparrows Lodge</div>
+      <div class="login-sub">Palm Springs</div>
+      <form id="login-form" class="login-form" novalidate>
+        <div class="login-field">
+          <label class="login-label" for="login-email">Email</label>
+          <input id="login-email" class="login-input" type="email"
+                 autocomplete="username" autocapitalize="none" spellcheck="false"
+                 placeholder="staff@sparrowslodge.com">
+        </div>
+        <div class="login-field">
+          <label class="login-label" for="login-password">Password</label>
+          <input id="login-password" class="login-input" type="password"
+                 autocomplete="current-password" placeholder="••••••••">
+        </div>
+        <div id="login-error" class="login-error" hidden></div>
+        <button id="btn-login" class="btn-primary login-btn" type="submit">Sign In</button>
+      </form>
+    </div>
+  </div><!-- /step-login -->
+
+
+  <!-- ══════════════════════════════════════════════════════
        STEP 0 — DASHBOARD
        ══════════════════════════════════════════════════════ -->
-  <div id="step-dashboard" class="step active">
+  <div id="step-dashboard" class="step">
 
     <header class="step-header">
       <div class="hotel-name">Sparrows Lodge</div>
@@ -67,6 +93,7 @@
       <button id="btn-new-registration" class="btn-primary" type="button">
         + New Registration
       </button>
+      <button id="btn-sign-out" class="btn-sign-out" type="button">Sign Out</button>
     </div>
 
   </div><!-- /step-dashboard -->
@@ -494,7 +521,13 @@
 <!-- PDF.js 3.x from CDN — must load before app modules -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
+<!-- Supabase — must load before supabaseClient.js -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <!-- App modules — load in dependency order (no build step required) -->
+<script src="js/supabaseClient.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/db.js"></script>
 <script src="js/store.js"></script>
 <script src="js/fieldNormalizer.js"></script>
 <script src="js/rateCalculator.js"></script>
