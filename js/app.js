@@ -83,7 +83,7 @@ const App = (() => {
       const chevron = document.querySelector('#btn-deleted-toggle .deleted-chevron');
       if (!list) return;
       list.hidden = !list.hidden;
-      if (chevron) chevron.textContent = list.hidden ? 'â–¾' : 'â–´';
+      if (chevron) chevron.textContent = list.hidden ? 'v' : '^';
     });
 
     // All "â† Home" buttons
@@ -155,7 +155,7 @@ const App = (() => {
     const btn      = document.getElementById('btn-login');
 
     if (errorEl) errorEl.hidden = true;
-    if (btn) { btn.disabled = true; btn.textContent = 'Signing inï¿½'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Signing in...'; }
 
     try {
       const { error } = await Auth.signIn(email, password);
@@ -563,7 +563,7 @@ const App = (() => {
     const meta      = [
       f.roomType    || null,
       f.confirmationNumber ? `#${f.confirmationNumber}` : null,
-    ].filter(Boolean).join(' Â· ');
+    ].filter(Boolean).join(' - ');
 
     const ts = entry.lastModifiedAt || entry.createdAt;
     const tsLabel = ts ? formatTimestamp(ts) : '';
@@ -571,11 +571,11 @@ const App = (() => {
     row.innerHTML = `
       <div class="entry-body">
         <div class="entry-name">${f.guestName || 'Unknown Guest'}</div>
-        <div class="entry-meta">${meta || 'â€”'}</div>
+        <div class="entry-meta">${meta || '--'}</div>
         ${tsLabel ? `<div class="entry-timestamp">${tsLabel}</div>` : ''}
       </div>
       <div class="entry-right">
-        <div class="entry-dates">${arrival} â€“ ${departure}</div>
+        <div class="entry-dates">${arrival} - ${departure}</div>
         <div class="entry-badge badge-${entry.status}">
           ${entry.status === 'current' ? 'In Progress' : 'Completed'}
         </div>
@@ -583,7 +583,7 @@ const App = (() => {
           Delete
         </button>
       </div>
-      <div class="entry-chevron" aria-hidden="true">â€º</div>
+      <div class="entry-chevron" aria-hidden="true">&rsaquo;</div>
     `;
 
     row.addEventListener('click',  () => openEntry(entry.id));
@@ -623,7 +623,7 @@ const App = (() => {
         <div class="entry-meta">Deleted ${deletedOn}</div>
       </div>
       <div class="entry-right">
-        <div class="entry-dates">${arrival} â€“ ${departure}</div>
+        <div class="entry-dates">${arrival} - ${departure}</div>
         <button class="entry-restore-btn" type="button" data-id="${entry.id}">Restore</button>
       </div>
     `;
@@ -638,7 +638,7 @@ const App = (() => {
   }
 
   function formatDateShort(dateStr) {
-    if (!dateStr) return 'â€”';
+    if (!dateStr) return '--';
     const normalized = FieldNormalizer.normalizeDate(dateStr) ?? dateStr;
     const parts = normalized.split('/');
     if (parts.length < 2) return dateStr;
@@ -692,7 +692,7 @@ const App = (() => {
       if (btnSaveDraft)   btnSaveDraft.style.display   = 'none';
       if (btnEdit)        btnEdit.style.display        = 'none';
     } else {
-      if (btnHandToGuest) { btnHandToGuest.textContent = 'Hand to Guest â†’'; btnHandToGuest.className = 'btn-complete'; }
+      if (btnHandToGuest) { btnHandToGuest.textContent = 'Hand to Guest ->'; btnHandToGuest.className = 'btn-complete'; }
       if (btnSaveDraft)   btnSaveDraft.style.display   = '';
       if (btnEdit)        btnEdit.style.display        = '';
     }
@@ -707,7 +707,7 @@ const App = (() => {
 
       if (isImagePdf) {
         showBanner('warning',
-          'This PDF appears to be a scanned image â€” text could not be extracted. Please fill in the fields manually.');
+          'This PDF appears to be a scanned image - text could not be extracted. Please fill in the fields manually.');
         _parsedData = Parser.parse('');
       } else {
         _parsedData = Parser.parse(text);
@@ -716,7 +716,7 @@ const App = (() => {
       const validation = Validator.validateAll(_parsedData);
       FormPrefiller.fillAll(_parsedData, validation);
 
-      if (validation.hasErrors)        showBanner('error',   'Some required fields could not be detected â€” fields in red need manual entry.');
+      if (validation.hasErrors)        showBanner('error',   'Some required fields could not be detected - fields in red need manual entry.');
       else if (validation.hasWarnings) showBanner('warning', 'Most fields were detected. Please review fields in yellow before confirming.');
       else {
         const banner = document.getElementById('validation-banner');
@@ -902,7 +902,7 @@ const App = (() => {
   function renderCard(fields, entry) {
     const set = (id, text) => {
       const el = document.getElementById(id);
-      if (el) el.textContent = text || 'â€”';
+      if (el) el.textContent = text || '--';
     };
 
     set('card-guest-name',   fields.guestName);
@@ -916,7 +916,7 @@ const App = (() => {
 
     const rateNum = FieldNormalizer.normalizeRate(fields.nightlyRate);
     set('card-nightly-rate',
-      rateNum !== null ? `${FieldNormalizer.formatRate(rateNum)} USD` : fields.nightlyRate || 'â€”');
+      rateNum !== null ? `${FieldNormalizer.formatRate(rateNum)} USD` : fields.nightlyRate || '--');
 
     // Timestamps
     const createdEl  = document.getElementById('card-created-at');
@@ -929,7 +929,7 @@ const App = (() => {
     if (modifiedEl) {
       const showModified = entry?.lastModifiedAt && entry.lastModifiedAt !== entry?.createdAt;
       modifiedEl.textContent = showModified
-        ? `Â· Last edited ${formatTimestamp(entry.lastModifiedAt)}`
+        ? `- Last edited ${formatTimestamp(entry.lastModifiedAt)}`
         : '';
     }
 
@@ -976,7 +976,7 @@ const App = (() => {
     if (linesContainer) {
       if (lines.length > 0) {
         linesContainer.innerHTML = lines
-          .map(l => `<div class="card-rate-line">${l.startDate} â€“ ${l.endDate} &nbsp; <strong>$${l.rate.toFixed(2)} USD</strong></div>`)
+          .map(l => `<div class="card-rate-line">${l.startDate} - ${l.endDate} &nbsp; <strong>$${l.rate.toFixed(2)} USD</strong></div>`)
           .join('');
         if (rateSection) rateSection.style.display = '';
       } else {
