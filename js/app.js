@@ -15,10 +15,36 @@ const App = (() => {
   let _parsedData    = null;  // PDF parse result (holds rateLines)
   let _currentId     = null;  // DB id of the entry being viewed
   let _unsubscribe   = null;  // real-time subscription cleanup
+  let _dashboardSearchEntries = []; // in-memory source for name suggestions
+
+  // ─── Init ─────────────────────────────────────────────────────────────────
+
+  // ─── Delete modal ────────────────────────────────────────────────────────────
+
+  let _deleteResolve = null;
+
+  function _initDeleteModal() {
+    const modal   = document.getElementById('delete-modal');
+    const confirm = document.getElementById('delete-modal-confirm');
+    const cancel  = document.getElementById('delete-modal-cancel');
+    confirm?.addEventListener('click', () => { modal.hidden = true; _deleteResolve?.(true);  });
+    cancel?.addEventListener('click',  () => { modal.hidden = true; _deleteResolve?.(false); });
+    modal?.addEventListener('click', e => {
+      if (e.target === modal) { modal.hidden = true; _deleteResolve?.(false); }
+    });
+  }
+
+  function _confirmDelete() {
+    return new Promise(resolve => {
+      _deleteResolve = resolve;
+      document.getElementById('delete-modal').hidden = false;
+    });
+  }
 
   // ─── Init ─────────────────────────────────────────────────────────────────
 
   async function init() {
+    _initDeleteModal();
     Uploader.init(onFileSelected);
 
     // Review step
@@ -39,6 +65,16 @@ const App = (() => {
     // Dashboard
     document.getElementById('btn-new-registration')?.addEventListener('click', startNewRegistration);
     document.getElementById('btn-sign-out')?.addEventListener('click', onSignOut);
+    document.getElementById('dashboard-search-input')?.addEventListener('input', e => {
+      _renderNameSuggestions(e.target.value);
+      renderDashboard();
+    });
+    document.getElementById('dashboard-search-input')?.addEventListener('focus', e => {
+      _renderNameSuggestions(e.target.value);
+    });
+    document.addEventListener('click', e => {
+      if (!e.target?.closest?.('.dashboard-search-wrap')) _hideNameSuggestions();
+    });
 
     // Recently deleted toggle
     document.getElementById('btn-deleted-toggle')?.addEventListener('click', () => {
@@ -92,8 +128,13 @@ const App = (() => {
     await renderDashboard();
     goToStep('dashboard');
 
-    // Real-time sync: re-render dashboard whenever another device makes a change
-    _unsubscribe = DB.subscribeToChanges(() => renderDashboard());
+    // Real-time sync should never block sign-in if it fails.
+    try {
+      _unsubscribe = DB.subscribeToChanges(() => renderDashboard());
+    } catch (err) {
+      console.error('[App] realtime subscription error:', err);
+      _unsubscribe = null;
+    }
   }
 
   // ─── Auth ──────────────────────────────────────────────────────────────────
@@ -106,20 +147,29 @@ const App = (() => {
     const btn      = document.getElementById('btn-login');
 
     if (errorEl) errorEl.hidden = true;
-    if (btn) { btn.disabled = true; btn.textContent = 'Signing in…'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Signing in�'; }
 
-    const { error } = await Auth.signIn(email, password);
-
-    if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
-
-    if (error) {
-      if (errorEl) { errorEl.textContent = error; errorEl.hidden = false; }
-      return;
+    try {
+      const { error } = await Auth.signIn(email, password);
+      if (error) {
+        if (errorEl) { errorEl.textContent = error; errorEl.hidden = false; }
+        return;
+      }
+      await _onAuthenticated();
+    } catch (err) {
+      console.error('[App] onLoginSubmit unexpected error:', err);
+      if (errorEl) {
+        const details = err?.message ? ` (${err.message})` : '';
+        const signedIn = Boolean(Auth.getSession());
+        errorEl.textContent = signedIn
+          ? `Sign-in worked, but dashboard loading failed${details}.`
+          : `Unable to complete sign in right now${details}.`;
+        errorEl.hidden = false;
+      }
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
     }
-
-    await _onAuthenticated();
   }
-
   async function onSignOut() {
     if (_unsubscribe) { _unsubscribe(); _unsubscribe = null; }
     await Auth.signOut();
@@ -140,12 +190,18 @@ const App = (() => {
   // ─── Dashboard ────────────────────────────────────────────────────────────
 
   async function renderDashboard() {
-    const all      = await DB.getAll();
-    const current  = all.filter(e => e.status === 'current');
-    const previous = all.filter(e => e.status === 'previous');
+    const all = await DB.getAll();
+    _dashboardSearchEntries = all;
+    const search = _readDashboardSearch();
+    const filtered = _filterDashboardEntries(all, search);
+    const current  = filtered.filter(e => e.status === 'current');
+    const previous = filtered.filter(e => e.status === 'previous');
+    const hasSearch = Boolean(search.query);
 
-    renderGroup('list-current',  current,  'No current registrations');
-    renderGroup('list-previous', previous, 'No previous entries');
+    renderGroup('list-current', current,
+      hasSearch ? 'No matching current registrations' : 'No current registrations');
+    renderGroupByDate('list-previous', previous,
+      hasSearch ? 'No matching previous entries' : 'No previous entries');
     await renderDeletedGroup();
 
     const setBadge = (id, n) => {
@@ -154,6 +210,122 @@ const App = (() => {
     };
     setBadge('count-current',  current.length);
     setBadge('count-previous', previous.length);
+  }
+
+  function _readDashboardSearch() {
+    const query = document.getElementById('dashboard-search-input')?.value?.trim() || '';
+    return { query };
+  }
+
+  function _filterDashboardEntries(entries, search) {
+    if (!search?.query) return entries;
+    return entries.filter(entry => _entryMatchesSearch(entry, search));
+  }
+
+  function _entryMatchesSearch(entry, search) {
+    const query = search.query.toLowerCase();
+    const compactQuery = query.replace(/[^a-z0-9]/g, '');
+    const searchValues = _collectSearchValues(entry);
+    return searchValues.some(value => {
+      const raw = value.toLowerCase();
+      const compact = raw.replace(/[^a-z0-9]/g, '');
+      return raw.includes(query) || (compactQuery ? compact.includes(compactQuery) : false);
+    });
+  }
+
+  function _collectSearchValues(entry) {
+    const values = [];
+
+    const add = value => {
+      if (!value) return;
+      const raw = String(value);
+      values.push(raw);
+
+      const date = new Date(raw);
+      if (!Number.isNaN(date.getTime())) {
+        values.push(date.toISOString().slice(0, 10));
+        values.push(date.toLocaleDateString('en-US'));
+        values.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+      }
+    };
+
+    add(entry?.fields?.guestName);
+    add(entry?.fields?.confirmationNumber);
+    add(entry?.fields?.arrivalDate);
+    add(entry?.fields?.departureDate);
+    add(entry?.createdAt);
+    add(entry?.completedAt);
+
+    return values;
+  }
+
+  function _renderNameSuggestions(inputValue) {
+    const container = document.getElementById('dashboard-name-suggestions');
+    const query = (inputValue || '').trim().toLowerCase();
+    if (!container) return;
+
+    if (!query) {
+      _hideNameSuggestions();
+      return;
+    }
+
+    const uniqueNames = [...new Set(
+      _dashboardSearchEntries
+        .map(entry => entry?.fields?.guestName?.trim())
+        .filter(Boolean)
+    )];
+
+    const nameMatches = uniqueNames
+      .filter(name => name.toLowerCase().includes(query))
+      .sort((a, b) => {
+        const aStarts = a.toLowerCase().startsWith(query) ? 0 : 1;
+        const bStarts = b.toLowerCase().startsWith(query) ? 0 : 1;
+        if (aStarts !== bStarts) return aStarts - bStarts;
+        return a.localeCompare(b);
+      })
+      .slice(0, 6);
+
+    const uniqueConfNums = [...new Set(
+      _dashboardSearchEntries
+        .map(entry => entry?.fields?.confirmationNumber?.trim())
+        .filter(Boolean)
+    )];
+
+    const confMatches = uniqueConfNums
+      .filter(n => n.toLowerCase().includes(query))
+      .sort((a, b) => (a.toLowerCase().startsWith(query) ? 0 : 1) - (b.toLowerCase().startsWith(query) ? 0 : 1))
+      .slice(0, 4);
+
+    if (nameMatches.length === 0 && confMatches.length === 0) {
+      _hideNameSuggestions();
+      return;
+    }
+
+    const makeSuggestion = (value, label) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'dashboard-name-suggestion';
+      btn.textContent = label;
+      btn.addEventListener('click', () => {
+        const inputEl = document.getElementById('dashboard-search-input');
+        if (inputEl) inputEl.value = value;
+        _hideNameSuggestions();
+        renderDashboard();
+      });
+      return btn;
+    };
+
+    container.innerHTML = '';
+    nameMatches.forEach(name => container.appendChild(makeSuggestion(name, name)));
+    confMatches.forEach(conf => container.appendChild(makeSuggestion(conf, `#${conf}`)));
+    container.hidden = false;
+  }
+
+  function _hideNameSuggestions() {
+    const container = document.getElementById('dashboard-name-suggestions');
+    if (!container) return;
+    container.hidden = true;
+    container.innerHTML = '';
   }
 
   async function renderDeletedGroup() {
@@ -189,6 +361,40 @@ const App = (() => {
     }
 
     entries.forEach(entry => container.appendChild(createEntryRow(entry)));
+  }
+
+  function renderGroupByDate(containerId, entries, emptyMessage) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    container.innerHTML = '';
+
+    if (entries.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'entry-empty';
+      empty.textContent = emptyMessage;
+      container.appendChild(empty);
+      return;
+    }
+
+    // Group by calendar date of completedAt (fall back to createdAt)
+    const groups = new Map();
+    entries.forEach(entry => {
+      const ts  = entry.completedAt || entry.createdAt;
+      const key = ts ? new Date(ts).toDateString() : 'Unknown Date';
+      const label = ts
+        ? new Date(ts).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+        : 'Unknown Date';
+      if (!groups.has(key)) groups.set(key, { label, items: [] });
+      groups.get(key).items.push(entry);
+    });
+
+    groups.forEach(({ label, items }) => {
+      const header = document.createElement('div');
+      header.className = 'entry-date-header';
+      header.textContent = label;
+      container.appendChild(header);
+      items.forEach(entry => container.appendChild(createEntryRow(entry)));
+    });
   }
 
   function createEntryRow(entry) {
@@ -236,7 +442,7 @@ const App = (() => {
     const deleteBtn = row.querySelector('.entry-delete-btn');
     deleteBtn?.addEventListener('click', async e => {
       e.stopPropagation();
-      const ok = window.confirm('Delete this entry? It will be kept in Recently Deleted for 30 days.');
+      const ok = await _confirmDelete();
       if (!ok) return;
       await DB.softDelete(entry.id);
       if (_currentId === entry.id) {
@@ -319,9 +525,9 @@ const App = (() => {
     _currentId  = id;
     _parsedData = { rateLines: entry.rateLines ?? [] };
 
+    goToStep('card');
     renderCard(entry.fields, entry);
     updateCardButtons(entry.status);
-    goToStep('card');
   }
 
   function updateCardButtons(status) {
@@ -398,9 +604,9 @@ const App = (() => {
     }
 
     const saved = await DB.getById(_currentId);
+    goToStep('card');
     renderCard(merged, saved);
     updateCardButtons('current');
-    goToStep('card');
   }
 
   function populateReviewForm(fields) {
@@ -528,9 +734,9 @@ const App = (() => {
       if (updated) {
         _currentId  = entryId;
         _parsedData = { rateLines: updated.rateLines ?? [] };
+        goToStep('card');
         renderCard(updated.fields, updated);
         updateCardButtons('previous');
-        goToStep('card');
         return;
       }
     }
@@ -632,6 +838,16 @@ const App = (() => {
 
   function _replaySignature(canvas, strokes) {
     if (!strokes || !strokes.length) return;
+
+    // Compute bounding box of all strokes in the original CSS-pixel space
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    strokes.forEach(stroke => stroke.forEach(pt => {
+      if (pt.x < minX) minX = pt.x;
+      if (pt.x > maxX) maxX = pt.x;
+      if (pt.y < minY) minY = pt.y;
+      if (pt.y > maxY) maxY = pt.y;
+    }));
+
     const dpr  = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
     canvas.width  = Math.round(rect.width  * dpr);
@@ -639,14 +855,31 @@ const App = (() => {
     const ctx = canvas.getContext('2d');
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.strokeStyle = '#000';
-    ctx.lineWidth   = 2.5;
+    ctx.lineWidth   = 2;
     ctx.lineCap     = 'round';
     ctx.lineJoin    = 'round';
+
+    // Scale strokes to fit inside the canvas with padding, then render slightly smaller
+    // so the saved signature does not stretch edge-to-edge.
+    const pad  = 10;
+    const visualScalePercent = '100%';
+    const visualScale = Math.max(0.1, Math.min(1, parseFloat(visualScalePercent) / 100 || 1));
+    const srcW = maxX - minX || 1;
+    const srcH = maxY - minY || 1;
+    const fitScale = Math.min((rect.width - pad * 2) / srcW, (rect.height - pad * 2) / srcH);
+    const scale = fitScale * visualScale;
+    const drawW = srcW * scale;
+    const drawH = srcH * scale;
+    const offX  = pad - minX * scale;
+    const offY  = (rect.height - drawH) / 2 - minY * scale;
+
     strokes.forEach(stroke => {
       if (!stroke.length) return;
       ctx.beginPath();
-      ctx.moveTo(stroke[0].x, stroke[0].y);
-      for (let i = 1; i < stroke.length; i++) ctx.lineTo(stroke[i].x, stroke[i].y);
+      ctx.moveTo(stroke[0].x * scale + offX, stroke[0].y * scale + offY);
+      for (let i = 1; i < stroke.length; i++) {
+        ctx.lineTo(stroke[i].x * scale + offX, stroke[i].y * scale + offY);
+      }
       ctx.stroke();
     });
   }
@@ -671,3 +904,4 @@ const App = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', () => App.init());
+
