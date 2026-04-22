@@ -56,7 +56,20 @@
     <div class="step-body">
       <div class="step-body-inner">
 
-        <h2 class="dashboard-section-heading">Registration Cards</h2>
+        <div class="dashboard-top-row">
+          <h2 class="dashboard-section-heading">Registration Cards</h2>
+          <div class="dashboard-search-wrap">
+            <input
+              id="dashboard-search-input"
+              class="dashboard-search-input"
+              type="text"
+              placeholder="Search..."
+              autocomplete="off"
+              spellcheck="false"
+            >
+            <div id="dashboard-name-suggestions" class="dashboard-name-suggestions" hidden></div>
+          </div>
+        </div>
 
         <!-- Current registrations -->
         <div class="list-group">
@@ -378,12 +391,6 @@
             </div>
           </div>
 
-          <!-- Submission log -->
-          <div class="card-timestamp-bar">
-            <span id="card-created-at"></span>
-            <span id="card-modified-at" class="card-modified-at"></span>
-          </div>
-
           <!-- Guest information -->
           <div class="card-section">
             <div class="card-section-label">Guest Information</div>
@@ -450,14 +457,14 @@
           <div class="policy-section">
             <div class="policy-greeting">Greetings from Sparrow's Lodge!</div>
             <div class="policy-text">
-              <p>Sparrow's Lodge has a <strong>48-hour cancellation policy. In the event of an early departure, one night's room and tax will be applied to your bill. Payment of all charges must be secured at check-in.</strong> Sparrow's Lodge offers physical room keys &mdash; <strong>you may be charged $100 for any lost keys.</strong></p>
+              <p>Sparrow's Lodge has a 48-hour cancellation policy. In the event of an early departure, one night's room and tax will be applied to your bill. Payment of all charges must be secured at check-in. Sparrow's Lodge offers physical room keys &mdash; you may be charged $100 for any lost keys.</p>
               <p>Payment may be made by acceptable credit, debit card, or other management-approved billing methods. Guests paying by credit card acknowledge that their card will be preauthorized for all room and tax charges. Additional authorization is taken to secure guest incidental charges. This includes incidentals or guests whose room and tax charges are being paid by a third party. Any unused authorization is released at the time of check-out. Please note that your financial institution will determine how quickly the authorization is released back to your account.</p>
-              <p>For your convenience, Sparrow's Lodge will create a running account for your charges made at the lobby bar/restaurant. Unless instructed otherwise, <strong>a 20% auto gratuity will be automatically added to your account.</strong></p>
-              <p><strong>Pool Hours: 6 am – 11 pm | Flotation devices, any type of ball, and/or amplified music are not permitted in the pool area.</strong> Pool use is exclusive to registered guests. <strong>There is no glass by the pool at any time. All outside Food and Beverages are strictly prohibited in public areas.</strong></p>
+              <p>For your convenience, Sparrow's Lodge will create a running account for your charges made at the lobby bar/restaurant. Unless instructed otherwise, a 20% auto gratuity will be automatically added to your account.</p>
+              <p>Pool Hours: 6 am – 11 pm | Flotation devices, any type of ball, and/or amplified music are not permitted in the pool area. Pool use is exclusive to registered guests. There is no glass by the pool at any time. All outside Food and Beverages are strictly prohibited in public areas.</p>
               <p>Sparrow's Lodge is not responsible for property lost, stolen, or left behind on the property. Sparrow's Lodge offers outdoor parking for guests' convenience and is not responsible for any lost or stolen items from vehicles or damage to vehicles parked on the property.</p>
-              <p><strong>Sparrow's Lodge is 100% non-smoking. A smoking and cleaning fee of $250 will be charged to any room where evidence of smoking is found.</strong></p>
-              <p>We welcome dogs less than 40 pounds with <strong>a one-time fee of $100 per stay, per dog. All dogs are required to be on a leash at all times.</strong></p>
-              <p>For your convenience and to enhance your guest experience, we welcome you to participate in the daily resort fee upon arrival. The resort fee includes access to the property Wi-Fi, the Sparrows Lodge breakfast, overnight self-parking, and more. <strong>Valued at $75, these amenities are available to our guests for $40 per night.</strong></p>
+              <p>Sparrow's Lodge is 100% non-smoking. A smoking and cleaning fee of $250 will be charged to any room where evidence of smoking is found.</p>
+              <p>We welcome dogs less than 40 pounds with a one-time fee of $100 per stay, per dog. All dogs are required to be on a leash at all times.</p>
+              <p>For your convenience and to enhance your guest experience, we welcome you to participate in the daily resort fee upon arrival. The resort fee includes access to the property Wi-Fi, the Sparrows Lodge breakfast, overnight self-parking, and more. Valued at $75, these amenities are available to our guests for $40 per night.</p>
             </div>
             <div class="resort-fee-row" id="card-resort-fee-row" style="display:none">
               <span class="resort-fee-label">Resort Fee</span>
@@ -467,12 +474,20 @@
 
           <!-- Guest signature -->
           <div class="signature-section">
-            <div class="signature-label">Guest Signature</div>
-            <div class="signature-line" id="card-signature-line" aria-label="Signature line"></div>
+            <div class="signature-row">
+              <div class="signature-label">Guest Signature</div>
+              <div class="signature-line" id="card-signature-line" aria-label="Signature line"></div>
+            </div>
             <div class="card-hotel-address">
               1330 E. Palm Canyon Drive &middot; Palm Springs, California 92264<br>
               (760) 327-2300 &middot; hello@sparrowslodge.com &middot; sparrowslodge.com
             </div>
+          </div>
+
+          <!-- Submission log -->
+          <div class="card-timestamp-bar">
+            <span id="card-created-at"></span>
+            <span id="card-modified-at" class="card-modified-at"></span>
           </div>
 
         </article><!-- /registration-card -->
@@ -516,6 +531,17 @@
   </div><!-- /step-guest -->
 
 
+  <!-- Confirm-delete modal -->
+  <div id="delete-modal" class="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-msg" hidden>
+    <div class="delete-modal-box">
+      <p id="delete-modal-msg" class="delete-modal-msg">Delete this entry? It will be kept in Recently Deleted for 30 days.</p>
+      <div class="delete-modal-actions">
+        <button id="delete-modal-cancel" class="btn-secondary" type="button">Cancel</button>
+        <button id="delete-modal-confirm" class="btn-primary delete-modal-confirm-btn" type="button">Delete</button>
+      </div>
+    </div>
+  </div>
+
 </div><!-- /app -->
 
 <!-- PDF.js 3.x from CDN — must load before app modules -->
@@ -544,5 +570,6 @@
 
 </body>
 </html>
+
 
 

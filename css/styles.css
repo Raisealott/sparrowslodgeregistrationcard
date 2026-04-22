@@ -28,6 +28,18 @@ html, body {
 
 .app { height: 100%; }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Each step fills the viewport; only .active is visible */
 .step {
   display: none;
@@ -178,15 +190,101 @@ html, body {
    STEP 0 — DASHBOARD
    ════════════════════════════════════════════════════════════ */
 
+.dashboard-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
 .dashboard-section-heading {
   font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  margin-bottom: 16px;
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.dashboard-search-wrap {
+  position: relative;
+  margin-left: auto;
+}
+
+.dashboard-search-input {
+  height: 30px;
+  width: 220px;
+  border: 2px solid #000;
+  background: #fff;
+  color: #000;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 0 10px;
+  border-radius: 0;
+  display: block;
+}
+
+.dashboard-search-input:focus {
+  outline: none;
+}
+
+.dashboard-name-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  border: 2px solid #000;
+  border-top: none;
+  background: #fff;
+  z-index: 40;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.dashboard-name-suggestions[hidden] {
+  display: none;
+}
+
+.dashboard-name-suggestion {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #ddd;
+  background: #fff;
+  color: #000;
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: left;
+  padding: 8px 10px;
+  cursor: pointer;
+  display: block;
+}
+
+.dashboard-name-suggestion:last-child {
+  border-bottom: none;
+}
+
+.dashboard-name-suggestion:hover {
+  background: #f5f5f5;
 }
 
 #step-dashboard .step-body {
   padding-top: 16px;
+}
+
+@media (max-width: 700px) {
+  .dashboard-top-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .dashboard-search {
+    width: 100%;
+  }
+
+  .dashboard-search-btn {
+    min-width: 88px;
+  }
 }
 
 .list-group { margin-bottom: 32px; }
@@ -196,7 +294,6 @@ html, body {
   align-items: baseline;
   gap: 8px;
   padding-bottom: 7px;
-  border-bottom: 2px solid #000;
   margin-bottom: 0;
 }
 .list-group-title {
@@ -214,9 +311,7 @@ html, body {
 .entry-list {
   display: flex;
   flex-direction: column;
-  border-left: 2px solid #000;
-  border-right: 2px solid #000;
-  border-bottom: 2px solid #000;
+  border: 2px solid #000;
 }
 
 /* Each row */
@@ -284,7 +379,6 @@ html, body {
   align-items: baseline;
   gap: 8px;
   padding-bottom: 7px;
-  border-bottom: 2px solid #000;
   font-family: var(--mono);
 }
 .deleted-toggle-header:active { opacity: 0.6; }
@@ -326,15 +420,25 @@ html, body {
   line-height: 1;
 }
 
+/* Date sub-header for grouped previous submissions */
+.entry-date-header {
+  padding: 10px 16px 4px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #999;
+  background: #f9f9f9;
+  border-top: 1px solid #eee;
+}
+.entry-date-header:first-child { border-top: none; }
+
 /* Empty state */
 .entry-empty {
   padding: 22px 16px;
   font-size: 13px;
   color: #aaa;
   text-align: center;
-  border-left: 2px solid #000;
-  border-right: 2px solid #000;
-  border-bottom: 2px solid #000;
   font-style: italic;
 }
 
@@ -681,11 +785,12 @@ html, body {
 .policy-text p:last-child { margin-bottom: 0; }
 
 /* Signature */
-.signature-section { padding: 16px 16px 24px; }
-.signature-label { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
-.signature-line { border-bottom: 1.5px solid #000; height: 42px; }
+.signature-section { padding: 12px 16px 12px; }
+.signature-row { display: flex; align-items: center; gap: 14px; }
+.signature-label { font-size: 13px; font-weight: 700; margin-bottom: 0; white-space: nowrap; }
+.signature-line { flex: 1; border-bottom: 1.5px solid #000; height: 48px; min-width: 0; }
 .signature-line.has-signature { height: auto; border-bottom: none; }
-.card-signature-img { display: block; width: 100%; height: 80px; }
+.card-signature-img { display: block; width: 100%; height: 48px; }
 
 /* ── Complete button ─────────────────────────────────────── */
 
@@ -722,6 +827,49 @@ html, body {
 
 
 /* ════════════════════════════════════════════════════════════
+   CONFIRM-DELETE MODAL
+   ════════════════════════════════════════════════════════════ */
+
+.delete-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+.delete-modal[hidden] { display: none; }
+
+.delete-modal-box {
+  background: #fff;
+  border: 2px solid #000;
+  padding: 28px 24px 20px;
+  max-width: 380px;
+  width: calc(100% - 40px);
+  font-family: var(--mono);
+}
+.delete-modal-msg {
+  font-size: 14px;
+  line-height: 1.55;
+  margin-bottom: 20px;
+}
+.delete-modal-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+.delete-modal-confirm-btn {
+  flex: none;
+  min-height: 44px;
+  padding: 0 20px;
+  background: #9a0000;
+  border-color: #9a0000;
+  font-size: 14px;
+}
+.delete-modal-confirm-btn:active { background: #700; }
+
+/* ════════════════════════════════════════════════════════════
    PRINT
    ════════════════════════════════════════════════════════════ */
 
@@ -745,10 +893,10 @@ html, body {
   .field-row { grid-template-columns: 1fr 1fr 1fr; }
   .card-guest-grid { grid-template-columns: repeat(3, 1fr); }
 
-  /* Center the registration card canvas on iPad/wider */
+  /* Center the registration card horizontally; start at top so scroll works */
   #step-card .step-body {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
     overflow-y: auto;
   }
@@ -759,6 +907,63 @@ html, body {
     margin: 0 auto;
   }
 
+  /* Restore header height on tablet so the Home button clears the card */
+  #step-card .step-header {
+    padding: 10px 16px;
+    min-height: 44px;
+    border-bottom: 2px solid #000;
+    display: flex;
+    align-items: center;
+  }
+
+  #step-card .btn-go-dashboard {
+    position: static;
+  }
+
+}
+
+/* ════════════════════════════════════════════════════════════
+   RESPONSIVE — Desktop (1024px+)
+   ════════════════════════════════════════════════════════════ */
+
+@media (min-width: 1024px) {
+  :root { --touch: clamp(52px, 4.5vh, 68px); }
+
+  /* Widen the content column to use more of the screen */
+  .step-body-inner { max-width: min(78vw, 1140px); }
+  .step-body        { padding: clamp(32px, 3vh, 56px) clamp(28px, 3vw, 60px); }
+
+  /* Header */
+  .step-header      { padding: clamp(14px, 1.8vh, 28px) clamp(16px, 2vw, 36px); }
+  .hotel-name       { font-size: clamp(17px, 1.4vw, 26px); }
+  .hotel-sub        { font-size: clamp(9px,  0.7vw, 13px); }
+  .step-title       { font-size: clamp(11px, 0.85vw, 15px); }
+  .dashboard-date   { font-size: clamp(11px, 0.85vw, 15px); }
+
+  /* Dashboard content */
+  .dashboard-section-heading { font-size: clamp(20px, 1.7vw, 30px); margin-bottom: 0; }
+  .list-group-title           { font-size: clamp(11px, 0.85vw, 15px); }
+  .list-group-count           { font-size: clamp(11px, 0.85vw, 15px); }
+  .list-group                 { margin-bottom: clamp(32px, 3vh, 52px); }
+
+  /* Entry rows */
+  .entry-row   { padding: clamp(14px, 1.6vh, 24px) clamp(16px, 1.6vw, 28px); gap: clamp(12px, 1.2vw, 20px); }
+  .entry-name  { font-size: clamp(16px, 1.3vw, 22px); }
+  .entry-meta  { font-size: clamp(12px, 0.9vw, 16px); }
+  .entry-dates { font-size: clamp(13px, 1vw,   18px); }
+  .entry-badge { font-size: clamp(10px, 0.75vw, 13px); padding: 2px 10px; }
+
+  /* Buttons */
+  .btn-primary   { font-size: clamp(15px, 1.1vw, 20px); }
+  .btn-secondary { font-size: clamp(13px, 0.95vw, 18px); }
+  .action-bar    { padding: clamp(12px, 1.4vh, 22px) clamp(16px, 2vw, 36px); gap: 12px; }
+
+  /* Back link */
+  .btn-go-dashboard { font-size: clamp(12px, 0.9vw, 16px); }
+
+  /* Card step: widen and ensure top-aligned scroll */
+  #step-card .step-body-inner { max-width: min(88vw, 1000px); }
+  #step-card .step-body       { padding: clamp(24px, 2.5vh, 48px) clamp(20px, 2vw, 48px); }
 }
 
 
@@ -1052,27 +1257,28 @@ html, body {
 
 .guest-policy-card {
   width: 100%;
-  max-width: 620px;
+  max-width: 1100px;
   margin: 0 auto;
   border: 2px solid #000;
   background: #fff;
-  padding: 12px;
-  font-size: 13px;
-  line-height: 1.55;
+  padding: clamp(10px, 1.1vw, 15px);
+  font-size: clamp(14px, 1.05vw, 17px);
+  line-height: 1.48;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   overflow: hidden;
-  flex: 1 1 0;
+  flex: 1 1 auto;
   height: 100%;
-  max-height: 100%;
+  max-height: none;
   min-height: 0;
 }
 
 .policy-copy {
   flex: 1 1 auto;
+  max-height: none;
   min-height: 0;
-  overflow-y: auto;
+  overflow-y: hidden;
   overflow-x: hidden;
   white-space: normal;
   overflow-wrap: anywhere;
@@ -1082,8 +1288,9 @@ html, body {
 }
 
 .guest-policy-card p {
-  font-size: 12px;
-  margin: 0 0 10px;
+  font-size: var(--policy-body-size, clamp(14px, 1.05vw, 17px));
+  line-height: var(--policy-body-line-height, 1.45);
+  margin: 0 0 clamp(8px, 0.7vw, 12px);
 }
 
 .policy-copy p:last-child {
@@ -1091,11 +1298,11 @@ html, body {
 }
 
 .policy-box-title {
-  font-size: 12px;
+  font-size: var(--policy-title-size, clamp(14px, 0.95vw, 16px));
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.18em;
-  margin: 0 0 10px;
+  letter-spacing: 0.16em;
+  margin: 0 0 clamp(8px, 0.7vw, 12px);
   text-align: center;
 }
 
@@ -1105,26 +1312,26 @@ html, body {
   gap: 8px;
   width: 100%;
   max-width: none;
-  margin: 12px 0 0;
-  padding-top: 12px;
+  margin: clamp(8px, 0.7vw, 12px) 0 0;
+  padding-top: clamp(8px, 0.7vw, 12px);
   border-top: 2px solid #000;
   background: #fff;
   flex-shrink: 0;
 }
 
 .policy-choice-btn {
-  min-height: 40px;
+  min-height: clamp(40px, 3.6vh, 52px);
   border: 1px solid #000;
   background: #fff;
   color: #000;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: var(--policy-choice-size, clamp(13px, 0.9vw, 15px));
   font-weight: 700;
   letter-spacing: 0.01em;
   text-transform: none;
   text-align: center;
-  padding: 8px 12px;
-  line-height: 1.25;
+  padding: clamp(7px, 0.8vh, 11px) clamp(10px, 0.9vw, 14px);
+  line-height: 1.3;
   cursor: pointer;
 }
 
@@ -1136,14 +1343,14 @@ html, body {
 .guest-slide[data-qid="policy"] {
   align-items: stretch;
   justify-content: flex-start;
-  padding-top: 12px;
-  padding-bottom: 12px;
-  overflow-y: hidden;
+  padding-top: clamp(8px, 1.2vh, 14px);
+  padding-bottom: clamp(8px, 1.2vh, 14px);
+  overflow: hidden;
 }
 
 .guest-slide[data-qid="policy"] .guest-slide-inner {
   width: 100%;
-  max-width: 700px;
+  max-width: min(96vw, 1200px);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -1236,6 +1443,13 @@ html, body {
 
 .guest-complete {
   gap: 0;
+  justify-content: center;
+  align-items: center;
+}
+.guest-complete-img {
+  max-width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
 }
 .guest-complete-mark {
   font-size: 64px;
@@ -1243,10 +1457,20 @@ html, body {
   margin-bottom: 28px;
 }
 .guest-complete-heading {
+  font-family: var(--mono);
   font-size: 34px;
   font-weight: 700;
   line-height: 1.15;
   margin-bottom: 16px;
+}
+
+.guest-complete .gs-sub {
+  font-family: var(--mono);
+  font-size: 34px;
+  font-weight: 700;
+  color: #000;
+  line-height: 1.15;
+  margin-top: 0;
 }
 
 /* ── Error + shake ───────────────────────────────────────── */
@@ -1279,6 +1503,7 @@ html, body {
   .confirm-value    { font-size: 36px; }
   .guest-input      { font-size: 32px; }
   .guest-complete-heading { font-size: 42px; }
+  .guest-complete .gs-sub { font-size: 42px; }
   .sig-canvas       { height: 320px; }
 }
 
@@ -1383,26 +1608,25 @@ html, body {
 @media (min-width: 768px) {
   /* Guest-facing policy step typography (Hand-to-Guest flow only) */
   #step-guest .guest-slide[data-qid="policy"] .guest-slide-inner {
-    max-width: 900px;
+    max-width: min(95vw, 1200px);
   }
   #step-guest .guest-policy-card {
-    max-width: 820px;
+    max-width: 1100px;
   }
   #step-guest .policy-copy p {
-    font-size: 17px;
-    line-height: 1.55;
-    margin-bottom: 10px;
+    font-size: var(--policy-body-size, clamp(14px, 0.92vw, 16px));
+    line-height: var(--policy-body-line-height, 1.45);
+    margin-bottom: clamp(8px, 0.65vw, 12px);
   }
   #step-guest .policy-box-title {
-    font-size: 16px;
+    font-size: var(--policy-title-size, clamp(14px, 0.9vw, 15px));
   }
   #step-guest .policy-choice-row {
-    flex-direction: row;
+    flex-direction: column;
   }
   #step-guest .policy-choice-btn {
-    flex: 1 1 0;
-    min-width: 0;
-    font-size: 14px;
+    width: 100%;
+    font-size: var(--policy-choice-size, clamp(13px, 0.86vw, 15px));
     line-height: 1.25;
   }
 }
@@ -1410,11 +1634,14 @@ html, body {
 /* ─── Login step ─────────────────────────────────────────────────────────── */
 
 #step-login {
-  display: flex;
   align-items: center;
   justify-content: center;
   min-height: 100vh;
   background: #fff;
+}
+
+#step-login.active {
+  display: flex;
 }
 
 .login-wrap {

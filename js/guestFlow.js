@@ -15,6 +15,7 @@ const GuestFlow = (() => {
   let _busy         = false; // prevent double-tap during transitions
   let _onComplete   = null;  // callback(state, entryId) when guest finishes
   let _entryId      = null;
+  let _policyFitRaf = null;
 
   const TRANSITION_MS = 320;
   const CONTACT_STEP_ID = 'contact';
@@ -126,6 +127,10 @@ const GuestFlow = (() => {
           newSlide.querySelector('.sig-clear-btn')
             ?.addEventListener('click', () => SignaturePad.clear());
         }
+      }
+
+      if (q.type === 'policy') {
+        _schedulePolicyFit(newSlide);
       }
     }, TRANSITION_MS);
   }
@@ -247,6 +252,9 @@ const GuestFlow = (() => {
       }
     }
 
+    // Auto-capitalize first typed character for text-like inputs.
+    el.querySelectorAll('.guest-input').forEach(_bindAutoCapitalizeFirstLetter);
+
     return el;
   }
 
@@ -291,6 +299,7 @@ const GuestFlow = (() => {
       input.autocorrect   = 'off';
       input.spellcheck    = false;
       input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); next(); } });
+      _bindAutoCapitalizeFirstLetter(input);
 
       wrap.replaceChild(input, display);
       editBtn.textContent = 'Done';
@@ -311,6 +320,27 @@ const GuestFlow = (() => {
         editBtn.addEventListener('click', onEdit);
       }, { once: false });
     });
+  }
+
+  function _bindAutoCapitalizeFirstLetter(input) {
+    if (!input) return;
+    const type = String(input.type || 'text').toLowerCase();
+    if (type === 'email' || type === 'tel' || type === 'password') return;
+
+    input.addEventListener('input', () => {
+      const original = input.value ?? '';
+      const updated  = _capitalizeFirstLetter(original);
+      if (updated === original) return;
+
+      const start = input.selectionStart;
+      const end   = input.selectionEnd;
+      input.value = updated;
+      if (start !== null && end !== null) input.setSelectionRange(start, end);
+    });
+  }
+
+  function _capitalizeFirstLetter(value) {
+    return String(value).replace(/^([a-z])/, c => c.toUpperCase());
   }
 
   function _buildStack(q) {
@@ -349,7 +379,8 @@ const GuestFlow = (() => {
   }
 
   function _buildPolicy(q) {
-    const selected = _state[q.field] || '';
+    const selected = _state[q.field] || 'Approved';
+    if (!_state[q.field]) _state[q.field] = 'Approved';
     const isApproved = selected === 'Approved';
     const isDeclined = selected === 'Declined';
 
@@ -358,14 +389,14 @@ const GuestFlow = (() => {
         <div class="guest-policy-card">
           <div class="policy-copy">
             <div class="policy-box-title">Greetings from Sparrow's Lodge!</div>
-            <p>Sparrow's Lodge has a <strong>48-hour cancellation policy. In the event of an early departure, one night's room and tax will be applied to your bill. Payment of all charges must be secured at check-in.</strong> Sparrow's Lodge offers physical room keys - <strong>you may be charged $100 for any lost keys.</strong></p>
+            <p>Sparrow's Lodge has a 48-hour cancellation policy. In the event of an early departure, one night's room and tax will be applied to your bill. Payment of all charges must be secured at check-in. Sparrow's Lodge offers physical room keys - you may be charged $100 for any lost keys.</p>
             <p>Payment may be made by acceptable credit, debit card, or other management-approved billing methods. Guests paying by credit card acknowledge that their card will be preauthorized for all room and tax charges. Additional authorization is taken to secure guest incidental charges. This includes incidentals or guests whose room and tax charges are being paid by a third party. Any unused authorization is released at the time of check-out. Please note that your financial institution will determine how quickly the authorization is released back to your account.</p>
-            <p>For your convenience, Sparrow's Lodge will create a running account for your charges made at the lobby bar/restaurant. Unless instructed otherwise, <strong>a 20% auto gratuity will be automatically added to your account.</strong></p>
-            <p><strong>Pool Hours: 6 am - 11 pm | Flotation devices, any type of ball, and/or amplified music are not permitted in the pool area.</strong> Pool use is exclusive to registered guests. <strong>There is no glass by the pool at any time. All outside Food and Beverages are strictly prohibited in public areas.</strong></p>
+            <p>For your convenience, Sparrow's Lodge will create a running account for your charges made at the lobby bar/restaurant. Unless instructed otherwise, a 20% auto gratuity will be automatically added to your account.</p>
+            <p>Pool Hours: 6 am - 11 pm | Flotation devices, any type of ball, and/or amplified music are not permitted in the pool area. Pool use is exclusive to registered guests. There is no glass by the pool at any time. All outside Food and Beverages are strictly prohibited in public areas.</p>
             <p>Sparrow's Lodge is not responsible for property lost, stolen, or left behind on the property. Sparrow's Lodge offers outdoor parking for guests' convenience and is not responsible for any lost or stolen items from vehicles or damage to vehicles parked on the property.</p>
-            <p><strong>Sparrow's Lodge is 100% non-smoking. A smoking and cleaning fee of $250 will be charged to any room where evidence of smoking is found.</strong></p>
-            <p>We welcome dogs less than 40 pounds with <strong>a one-time fee of $100 per stay, per dog. All dogs are required to be on a leash at all times.</strong></p>
-            <p>For your convenience and to enhance your guest experience, we welcome you to participate in the daily resort fee upon arrival. The resort fee includes access to the property Wi-Fi, the Sparrows Lodge breakfast, overnight self-parking, and more. <strong>Valued at $75, these amenities are available to our guests for $40 per night.</strong></p>
+            <p>Sparrow's Lodge is 100% non-smoking. A smoking and cleaning fee of $250 will be charged to any room where evidence of smoking is found.</p>
+            <p>We welcome dogs less than 40 pounds with a one-time fee of $100 per stay, per dog. All dogs are required to be on a leash at all times.</p>
+            <p>For your convenience and to enhance your guest experience, we welcome you to participate in the daily resort fee upon arrival. The resort fee includes access to the property Wi-Fi, the Sparrows Lodge breakfast, overnight self-parking, and more. Valued at $75, these amenities are available to our guests for $40 per night.</p>
           </div>
           <div class="policy-choice-row">
             <button class="policy-choice-btn${isApproved ? ' selected' : ''}" data-policy-choice="Approved" type="button">Opt In - welcome drink, breakfast, bikes, smores, wifi &amp; more ($40 per night)</button>
@@ -385,6 +416,70 @@ const GuestFlow = (() => {
         btn.classList.add('selected');
         _clearError();
       });
+    });
+
+    _schedulePolicyFit(slide);
+  }
+
+  function _schedulePolicyFit(slide) {
+    if (!slide) return;
+    if (_policyFitRaf) cancelAnimationFrame(_policyFitRaf);
+    _policyFitRaf = requestAnimationFrame(() => {
+      _fitPolicyTypography(slide);
+      _fitPolicyChoiceButtons(slide);
+      _policyFitRaf = requestAnimationFrame(() => {
+        _fitPolicyTypography(slide);
+        _fitPolicyChoiceButtons(slide);
+      });
+    });
+  }
+
+  function _fitPolicyTypography(slide) {
+    const copy = slide?.querySelector('.policy-copy');
+    if (!copy) return;
+
+    // Reset to defaults before measuring.
+    copy.style.removeProperty('--policy-body-size');
+    copy.style.removeProperty('--policy-title-size');
+    copy.style.removeProperty('--policy-body-line-height');
+
+    // Find the largest readable font that fully fits inside the copy area.
+    let low = 12;
+    let high = 40;
+    let best = 12;
+
+    const apply = (sizePx) => {
+      copy.style.setProperty('--policy-body-size', `${sizePx}px`);
+      copy.style.setProperty('--policy-title-size', `${Math.max(13, sizePx - 1)}px`);
+      copy.style.setProperty('--policy-body-line-height', sizePx >= 18 ? '1.4' : '1.45');
+    };
+
+    for (let i = 0; i < 11; i++) {
+      const mid = (low + high) / 2;
+      apply(mid);
+      if (copy.scrollHeight <= copy.clientHeight) {
+        best = mid;
+        low = mid;
+      } else {
+        high = mid;
+      }
+    }
+
+    apply(Math.round(best * 10) / 10);
+  }
+
+  function _fitPolicyChoiceButtons(slide) {
+    const buttons = [...(slide?.querySelectorAll('.policy-choice-btn') || [])];
+    if (!buttons.length) return;
+
+    buttons.forEach(btn => {
+      const width = btn.getBoundingClientRect().width;
+      if (!width) return;
+
+      // Scale button label size by button width for iPad/readability,
+      // with sane bounds so it stays legible but doesn't overflow.
+      const sizePx = Math.max(14, Math.min(22, width * 0.022));
+      btn.style.setProperty('--policy-choice-size', `${Math.round(sizePx * 10) / 10}px`);
     });
   }
 
@@ -508,14 +603,11 @@ const GuestFlow = (() => {
   }
 
   function _buildComplete() {
-    const firstName = (_state.guestName || '').trim().split(/\s+/)[0] || '';
+    const fullName = (_state.guestName || '').trim();
+    const guestName = (fullName.split(/\s+/)[0] || '').trim() || 'Guest';
     return `
       <div class="guest-slide-inner guest-complete">
-        <div class="guest-complete-mark">✓</div>
-        <div class="guest-complete-heading">
-          You're all set${firstName ? `, ${_esc(firstName)}` : ''}!
-        </div>
-        <p class="gs-sub">Welcome to Sparrows Lodge.<br>We hope you enjoy your stay.</p>
+        <img src="assets/youre all set bird.png" alt="You're all set" class="guest-complete-img">
       </div>`;
   }
 
@@ -589,6 +681,9 @@ const GuestFlow = (() => {
 
     _updateProgress();
     _updateNavButtons();
+
+    const q = _getFlow()[index];
+    if (q?.type === 'policy') _schedulePolicyFit(slide);
   }
 
   // ─── Nav binding ──────────────────────────────────────────────
@@ -617,6 +712,11 @@ const GuestFlow = (() => {
       });
     }
   }
+
+  window.addEventListener('resize', () => {
+    const active = document.querySelector('.guest-slide.slide-active[data-qid="policy"]');
+    if (active) _schedulePolicyFit(active);
+  });
 
   // ─── Car autocomplete ─────────────────────────────────────────
 
@@ -683,4 +783,5 @@ const GuestFlow = (() => {
 
   return { start, next, back };
 })();
+
 

@@ -1,0 +1,9 @@
+{
+  "name": "sparrowslodgeregistrationcard",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Local static site runner for Sparrows Lodge registration card",
+  "scripts": {
+    "dev": "node dev-server.mjs"
+  }
+}
