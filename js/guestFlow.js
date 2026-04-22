@@ -133,10 +133,10 @@ const GuestFlow = (() => {
   // ─── Validation & state ───────────────────────────────────────
 
   function _validateAndSave(q) {
-    // Signature: check canvas then save data URL
+    // Signature: check canvas then save stroke data
     if (q.type === 'signature') {
       if (SignaturePad.isEmpty()) return 'Please add your signature to continue.';
-      _state.signature = SignaturePad.getDataUrl();
+      _state.signature = SignaturePad.getStrokes();
       return null;
     }
 
