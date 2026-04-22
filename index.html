@@ -38,6 +38,33 @@
         <div id="login-error" class="login-error" hidden></div>
         <button id="btn-login" class="btn-primary login-btn" type="submit">Sign In</button>
       </form>
+      <button id="btn-show-request-access" class="btn-request-access" type="button">Sign Up</button>
+      <div id="request-access-panel" class="request-access-panel" hidden>
+        <form id="request-access-form" class="login-form" novalidate>
+          <div class="login-field">
+            <label class="login-label" for="request-full-name">Full Name</label>
+            <input id="request-full-name" class="login-input" type="text"
+                   autocomplete="name" placeholder="Jane Doe">
+          </div>
+          <div class="login-field">
+            <label class="login-label" for="request-email">Work Email</label>
+            <input id="request-email" class="login-input" type="email"
+                   autocomplete="email" autocapitalize="none" spellcheck="false"
+                   placeholder="jane@sparrowslodge.com">
+          </div>
+          <div class="login-field">
+            <label class="login-label" for="request-property">Property</label>
+            <select id="request-property" class="login-input"></select>
+          </div>
+          <div class="login-field">
+            <label class="login-label" for="request-note">Note (optional)</label>
+            <textarea id="request-note" class="login-input request-note" rows="3"
+                      placeholder="Role, shift, or any context for approval"></textarea>
+          </div>
+          <div id="request-access-feedback" class="login-error" hidden></div>
+          <button id="btn-request-access-submit" class="btn-primary login-btn" type="submit">Send Request</button>
+        </form>
+      </div>
     </div>
   </div><!-- /step-login -->
 
@@ -97,6 +124,16 @@
             <span class="deleted-chevron">▾</span>
           </button>
           <div id="list-deleted" class="entry-list" hidden></div>
+        </div>
+
+        <!-- Access requests (admin only) -->
+        <div id="access-requests-section" class="list-group" hidden>
+          <div class="list-group-header access-requests-header">
+            <span class="list-group-title">Sign-up Requests</span>
+            <span id="count-access-requests" class="list-group-count"></span>
+            <button id="btn-refresh-access-requests" class="access-requests-refresh" type="button">Refresh</button>
+          </div>
+          <div id="list-access-requests" class="entry-list"></div>
         </div>
 
       </div>

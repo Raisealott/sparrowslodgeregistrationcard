@@ -1,14 +1,14 @@
-/**
+﻿/**
  * app.js
- * Main controller — manages step navigation and entry lifecycle.
+ * Main controller â€” manages step navigation and entry lifecycle.
  *
- * Steps:  login → dashboard → upload → processing → review → card → guest
+ * Steps:  login â†’ dashboard â†’ upload â†’ processing â†’ review â†’ card â†’ guest
  *
  * Entry lifecycle:
- *   "Generate Card" → saved to DB as 'current'
- *   "Complete"      → status updated to 'previous', back to dashboard
- *   "Save & Close"  → stays 'current', back to dashboard
- *   Tap dashboard row → open card for that entry
+ *   "Generate Card" â†’ saved to DB as 'current'
+ *   "Complete"      â†’ status updated to 'previous', back to dashboard
+ *   "Save & Close"  â†’ stays 'current', back to dashboard
+ *   Tap dashboard row â†’ open card for that entry
  */
 const App = (() => {
 
@@ -16,10 +16,11 @@ const App = (() => {
   let _currentId     = null;  // DB id of the entry being viewed
   let _unsubscribe   = null;  // real-time subscription cleanup
   let _dashboardSearchEntries = []; // in-memory source for name suggestions
+  let _requestPanelOpen = false;
 
-  // ─── Init ─────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-  // ─── Delete modal ────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Delete modal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   let _deleteResolve = null;
 
@@ -41,7 +42,7 @@ const App = (() => {
     });
   }
 
-  // ─── Init ─────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function init() {
     _initDeleteModal();
@@ -82,10 +83,10 @@ const App = (() => {
       const chevron = document.querySelector('#btn-deleted-toggle .deleted-chevron');
       if (!list) return;
       list.hidden = !list.hidden;
-      if (chevron) chevron.textContent = list.hidden ? '▾' : '▴';
+      if (chevron) chevron.textContent = list.hidden ? 'â–¾' : 'â–´';
     });
 
-    // All "← Home" buttons
+    // All "â† Home" buttons
     document.querySelectorAll('.btn-go-dashboard').forEach(btn =>
       btn.addEventListener('click', () => { renderDashboard(); goToStep('dashboard'); })
     );
@@ -93,6 +94,13 @@ const App = (() => {
 
     // Login form
     document.getElementById('login-form')?.addEventListener('submit', onLoginSubmit);
+    document.getElementById('btn-show-request-access')?.addEventListener('click', toggleRequestAccessPanel);
+    document.getElementById('request-access-form')?.addEventListener('submit', onRequestAccessSubmit);
+    await _initRequestAccessForm();
+
+    // Admin access requests
+    document.getElementById('btn-refresh-access-requests')?.addEventListener('click', renderAccessRequests);
+    document.getElementById('list-access-requests')?.addEventListener('click', onAccessRequestActionClick);
 
     // Auth: restore session or show login
     const session = await Auth.init();
@@ -137,7 +145,7 @@ const App = (() => {
     }
   }
 
-  // ─── Auth ──────────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Auth â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function onLoginSubmit(e) {
     e.preventDefault();
@@ -147,7 +155,7 @@ const App = (() => {
     const btn      = document.getElementById('btn-login');
 
     if (errorEl) errorEl.hidden = true;
-    if (btn) { btn.disabled = true; btn.textContent = 'Signing in�'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Signing inï¿½'; }
 
     try {
       const { error } = await Auth.signIn(email, password);
@@ -176,7 +184,150 @@ const App = (() => {
     goToStep('login');
   }
 
-  // ─── Step navigation ──────────────────────────────────────────────────────
+  async function _initRequestAccessForm() {
+    const select = document.getElementById('request-property');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Loading properties...</option>';
+    const { properties, error } = await Auth.getPropertiesPublic();
+    if (error) {
+      select.innerHTML = '<option value="">Unable to load properties</option>';
+      return;
+    }
+
+    const options = ['<option value="">Select property</option>']
+      .concat(properties.map(p => `<option value="${p.id}">${p.name}</option>`));
+    select.innerHTML = options.join('');
+  }
+
+  function toggleRequestAccessPanel() {
+    const panel = document.getElementById('request-access-panel');
+    const btn = document.getElementById('btn-show-request-access');
+    if (!panel || !btn) return;
+
+    _requestPanelOpen = !_requestPanelOpen;
+    panel.hidden = !_requestPanelOpen;
+    btn.textContent = _requestPanelOpen ? 'Hide Sign-up Form' : 'Sign Up';
+    if (_requestPanelOpen) panel.querySelector('input,select,textarea')?.focus();
+  }
+
+  function _setRequestAccessFeedback(message, type = 'error') {
+    const feedback = document.getElementById('request-access-feedback');
+    if (!feedback) return;
+    feedback.hidden = !message;
+    feedback.textContent = message || '';
+    feedback.className = type === 'success' ? 'login-success' : 'login-error';
+  }
+
+  async function onRequestAccessSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-request-access-submit');
+    const fullName = document.getElementById('request-full-name')?.value?.trim() ?? '';
+    const email = document.getElementById('request-email')?.value?.trim() ?? '';
+    const requestedPropertyId = document.getElementById('request-property')?.value ?? '';
+    const note = document.getElementById('request-note')?.value?.trim() ?? '';
+
+    _setRequestAccessFeedback('');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+
+    try {
+      const { error } = await Auth.requestAccess({ fullName, email, requestedPropertyId, note });
+      if (error) {
+        _setRequestAccessFeedback(error, 'error');
+        return;
+      }
+
+      document.getElementById('request-access-form')?.reset();
+      _setRequestAccessFeedback(
+        'Sign-up request sent. An admin must approve it before account setup.',
+        'success'
+      );
+    } catch (err) {
+      console.error('[App] onRequestAccessSubmit unexpected error:', err);
+      _setRequestAccessFeedback('Unable to submit request right now. Please try again.', 'error');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Send Request'; }
+    }
+  }
+
+  async function renderAccessRequests() {
+    const section = document.getElementById('access-requests-section');
+    const container = document.getElementById('list-access-requests');
+    const countEl = document.getElementById('count-access-requests');
+    if (!section || !container || !countEl) return;
+
+    if (Auth.getProfile()?.role !== 'admin') {
+      section.hidden = true;
+      return;
+    }
+
+    section.hidden = false;
+    container.innerHTML = '';
+
+    const { requests, error } = await Auth.listSignupRequests('pending');
+    if (error) {
+      const empty = document.createElement('div');
+      empty.className = 'entry-empty';
+      empty.textContent = error;
+      container.appendChild(empty);
+      countEl.textContent = '';
+      return;
+    }
+
+    countEl.textContent = requests.length > 0 ? `(${requests.length})` : '';
+    if (!requests.length) {
+      const empty = document.createElement('div');
+      empty.className = 'entry-empty';
+      empty.textContent = 'No pending sign-up requests';
+      container.appendChild(empty);
+      return;
+    }
+
+    requests.forEach(req => container.appendChild(createAccessRequestRow(req)));
+  }
+
+  function createAccessRequestRow(req) {
+    const row = document.createElement('div');
+    row.className = 'access-request-row';
+    const requestedDate = req.requested_at
+      ? new Date(req.requested_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+      : 'Unknown';
+    const propertyName = req.requested_property?.name || 'Unknown property';
+    const safeNote = req.note ? `<div class="access-request-note">${req.note}</div>` : '';
+
+    row.innerHTML = `
+      <div class="entry-name">${req.full_name || 'Unknown Name'}</div>
+      <div class="entry-meta">${req.email || ''}</div>
+      <div class="access-request-meta">${propertyName} · Requested ${requestedDate}</div>
+      ${safeNote}
+      <div class="access-request-actions">
+        <button class="access-request-btn approve" type="button" data-access-action="approved" data-request-id="${req.id}">Approve</button>
+        <button class="access-request-btn reject" type="button" data-access-action="rejected" data-request-id="${req.id}">Reject</button>
+      </div>
+    `;
+    return row;
+  }
+
+  async function onAccessRequestActionClick(e) {
+    const btn = e.target?.closest?.('[data-access-action]');
+    if (!btn) return;
+
+    const requestId = btn.getAttribute('data-request-id');
+    const decision = btn.getAttribute('data-access-action');
+    if (!requestId || !decision) return;
+
+    const note = window.prompt('Optional internal note for this decision:', '')?.trim() || null;
+    btn.disabled = true;
+    try {
+      const { error } = await Auth.decideSignupRequest(requestId, decision, note);
+      if (error) window.alert(error);
+      await renderAccessRequests();
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // â”€â”€â”€ Step navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   function goToStep(name) {
     document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
@@ -187,7 +338,7 @@ const App = (() => {
     }
   }
 
-  // ─── Dashboard ────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function renderDashboard() {
     const all = await DB.getAll();
@@ -210,6 +361,7 @@ const App = (() => {
     };
     setBadge('count-current',  current.length);
     setBadge('count-previous', previous.length);
+    await renderAccessRequests();
   }
 
   function _readDashboardSearch() {
@@ -411,7 +563,7 @@ const App = (() => {
     const meta      = [
       f.roomType    || null,
       f.confirmationNumber ? `#${f.confirmationNumber}` : null,
-    ].filter(Boolean).join(' · ');
+    ].filter(Boolean).join(' Â· ');
 
     const ts = entry.lastModifiedAt || entry.createdAt;
     const tsLabel = ts ? formatTimestamp(ts) : '';
@@ -419,11 +571,11 @@ const App = (() => {
     row.innerHTML = `
       <div class="entry-body">
         <div class="entry-name">${f.guestName || 'Unknown Guest'}</div>
-        <div class="entry-meta">${meta || '—'}</div>
+        <div class="entry-meta">${meta || 'â€”'}</div>
         ${tsLabel ? `<div class="entry-timestamp">${tsLabel}</div>` : ''}
       </div>
       <div class="entry-right">
-        <div class="entry-dates">${arrival} – ${departure}</div>
+        <div class="entry-dates">${arrival} â€“ ${departure}</div>
         <div class="entry-badge badge-${entry.status}">
           ${entry.status === 'current' ? 'In Progress' : 'Completed'}
         </div>
@@ -431,7 +583,7 @@ const App = (() => {
           Delete
         </button>
       </div>
-      <div class="entry-chevron" aria-hidden="true">›</div>
+      <div class="entry-chevron" aria-hidden="true">â€º</div>
     `;
 
     row.addEventListener('click',  () => openEntry(entry.id));
@@ -471,7 +623,7 @@ const App = (() => {
         <div class="entry-meta">Deleted ${deletedOn}</div>
       </div>
       <div class="entry-right">
-        <div class="entry-dates">${arrival} – ${departure}</div>
+        <div class="entry-dates">${arrival} â€“ ${departure}</div>
         <button class="entry-restore-btn" type="button" data-id="${entry.id}">Restore</button>
       </div>
     `;
@@ -486,7 +638,7 @@ const App = (() => {
   }
 
   function formatDateShort(dateStr) {
-    if (!dateStr) return '—';
+    if (!dateStr) return 'â€”';
     const normalized = FieldNormalizer.normalizeDate(dateStr) ?? dateStr;
     const parts = normalized.split('/');
     if (parts.length < 2) return dateStr;
@@ -496,7 +648,7 @@ const App = (() => {
     return `${months[m] ?? ''} ${d}`;
   }
 
-  // ─── Start new registration ───────────────────────────────────────────────
+  // â”€â”€â”€ Start new registration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   function startNewRegistration() {
     _parsedData = null;
@@ -516,7 +668,7 @@ const App = (() => {
     if (banner) banner.style.display = 'none';
   }
 
-  // ─── Open existing entry from dashboard ──────────────────────────────────
+  // â”€â”€â”€ Open existing entry from dashboard â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function openEntry(id) {
     const entry = await DB.getById(id);
@@ -540,13 +692,13 @@ const App = (() => {
       if (btnSaveDraft)   btnSaveDraft.style.display   = 'none';
       if (btnEdit)        btnEdit.style.display        = 'none';
     } else {
-      if (btnHandToGuest) { btnHandToGuest.textContent = 'Hand to Guest →'; btnHandToGuest.className = 'btn-complete'; }
+      if (btnHandToGuest) { btnHandToGuest.textContent = 'Hand to Guest â†’'; btnHandToGuest.className = 'btn-complete'; }
       if (btnSaveDraft)   btnSaveDraft.style.display   = '';
       if (btnEdit)        btnEdit.style.display        = '';
     }
   }
 
-  // ─── PDF pipeline ─────────────────────────────────────────────────────────
+  // â”€â”€â”€ PDF pipeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function onFileSelected(file) {
     goToStep('processing');
@@ -555,7 +707,7 @@ const App = (() => {
 
       if (isImagePdf) {
         showBanner('warning',
-          'This PDF appears to be a scanned image — text could not be extracted. Please fill in the fields manually.');
+          'This PDF appears to be a scanned image â€” text could not be extracted. Please fill in the fields manually.');
         _parsedData = Parser.parse('');
       } else {
         _parsedData = Parser.parse(text);
@@ -564,7 +716,7 @@ const App = (() => {
       const validation = Validator.validateAll(_parsedData);
       FormPrefiller.fillAll(_parsedData, validation);
 
-      if (validation.hasErrors)        showBanner('error',   'Some required fields could not be detected — fields in red need manual entry.');
+      if (validation.hasErrors)        showBanner('error',   'Some required fields could not be detected â€” fields in red need manual entry.');
       else if (validation.hasWarnings) showBanner('warning', 'Most fields were detected. Please review fields in yellow before confirming.');
       else {
         const banner = document.getElementById('validation-banner');
@@ -581,7 +733,7 @@ const App = (() => {
     }
   }
 
-  // ─── Review → Card ────────────────────────────────────────────────────────
+  // â”€â”€â”€ Review â†’ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function onConfirm() {
     const values   = readReviewForm();
@@ -649,7 +801,7 @@ const App = (() => {
     };
   }
 
-  // ─── Card actions ─────────────────────────────────────────────────────────
+  // â”€â”€â”€ Card actions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   function onSaveDraft() {
     renderDashboard();
@@ -745,12 +897,12 @@ const App = (() => {
     goToStep('dashboard');
   }
 
-  // ─── Card rendering ───────────────────────────────────────────────────────
+  // â”€â”€â”€ Card rendering â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   function renderCard(fields, entry) {
     const set = (id, text) => {
       const el = document.getElementById(id);
-      if (el) el.textContent = text || '—';
+      if (el) el.textContent = text || 'â€”';
     };
 
     set('card-guest-name',   fields.guestName);
@@ -764,7 +916,7 @@ const App = (() => {
 
     const rateNum = FieldNormalizer.normalizeRate(fields.nightlyRate);
     set('card-nightly-rate',
-      rateNum !== null ? `${FieldNormalizer.formatRate(rateNum)} USD` : fields.nightlyRate || '—');
+      rateNum !== null ? `${FieldNormalizer.formatRate(rateNum)} USD` : fields.nightlyRate || 'â€”');
 
     // Timestamps
     const createdEl  = document.getElementById('card-created-at');
@@ -777,7 +929,7 @@ const App = (() => {
     if (modifiedEl) {
       const showModified = entry?.lastModifiedAt && entry.lastModifiedAt !== entry?.createdAt;
       modifiedEl.textContent = showModified
-        ? `· Last edited ${formatTimestamp(entry.lastModifiedAt)}`
+        ? `Â· Last edited ${formatTimestamp(entry.lastModifiedAt)}`
         : '';
     }
 
@@ -802,7 +954,7 @@ const App = (() => {
     if (carModelEl) carModelEl.value = fields.carModel || '';
     if (carColorEl) carColorEl.value = fields.carColor || '';
 
-    // Signature — stroke data lives at entry.signature (top-level column)
+    // Signature â€” stroke data lives at entry.signature (top-level column)
     const sigLine = document.getElementById('card-signature-line');
     if (sigLine) {
       sigLine.innerHTML = '';
@@ -824,7 +976,7 @@ const App = (() => {
     if (linesContainer) {
       if (lines.length > 0) {
         linesContainer.innerHTML = lines
-          .map(l => `<div class="card-rate-line">${l.startDate} – ${l.endDate} &nbsp; <strong>$${l.rate.toFixed(2)} USD</strong></div>`)
+          .map(l => `<div class="card-rate-line">${l.startDate} â€“ ${l.endDate} &nbsp; <strong>$${l.rate.toFixed(2)} USD</strong></div>`)
           .join('');
         if (rateSection) rateSection.style.display = '';
       } else {
@@ -834,7 +986,7 @@ const App = (() => {
     }
   }
 
-  // ─── Helpers ──────────────────────────────────────────────────────────────
+  // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   function _replaySignature(canvas, strokes) {
     if (!strokes || !strokes.length) return;
@@ -904,4 +1056,5 @@ const App = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', () => App.init());
+
 

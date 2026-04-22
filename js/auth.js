@@ -5,6 +5,10 @@
  * Public API:
  *   init()                        — restore session from storage, returns session or null
  *   signIn(email, password)       — returns { error } or {}
+ *   getPropertiesPublic()         — returns { properties, error } for login/signup selectors
+ *   requestAccess(payload)        — create pending signup request
+ *   listSignupRequests(status)    — admin-only request queue
+ *   decideSignupRequest(id, s)    — admin-only approve/reject
  *   signOut()                     — clears session
  *   getSession()                  — returns current session or null
  *   getProfile()                  — returns { id, full_name, role, property_id } or null
@@ -68,6 +72,111 @@ const Auth = (() => {
     _property = null;
   }
 
+  async function getPropertiesPublic() {
+    const { data, error } = await _supabase
+      .from('properties')
+      .select('id, name, slug')
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('[Auth] getPropertiesPublic error:', error);
+      return { properties: [], error: 'Could not load properties right now.' };
+    }
+    return { properties: data ?? [], error: null };
+  }
+
+  async function requestAccess(payload) {
+    const fullName = (payload?.fullName || '').trim();
+    const email = (payload?.email || '').trim().toLowerCase();
+    const requestedPropertyId = payload?.requestedPropertyId || null;
+    const note = (payload?.note || '').trim() || null;
+
+    if (!fullName) return { error: 'Please enter your full name.' };
+    if (!email) return { error: 'Please enter your email address.' };
+    if (!requestedPropertyId) return { error: 'Please choose a property.' };
+
+    const { data, error } = await _supabase
+      .from('signup_requests')
+      .insert({
+        full_name: fullName,
+        email,
+        requested_property_id: requestedPropertyId,
+        note,
+        status: 'pending',
+      })
+      .select('id')
+      .single();
+
+    if (error) {
+      if (error.code === '23505') {
+        return { error: 'A pending request already exists for this email.' };
+      }
+      console.error('[Auth] requestAccess error:', error);
+      return { error: 'Could not submit your request right now. Please try again.' };
+    }
+
+    return { requestId: data?.id ?? null, error: null };
+  }
+
+  async function listSignupRequests(status = 'pending') {
+    if (_profile?.role !== 'admin') {
+      return { requests: [], error: 'Only admins can view signup requests.' };
+    }
+
+    const { data, error } = await _supabase
+      .from('signup_requests')
+      .select(`
+        id,
+        full_name,
+        email,
+        note,
+        status,
+        requested_at,
+        requested_property_id,
+        reviewer_note,
+        reviewed_at,
+        requested_property:properties(name, slug)
+      `)
+      .eq('status', status)
+      .order('requested_at', { ascending: true });
+
+    if (error) {
+      console.error('[Auth] listSignupRequests error:', error);
+      return { requests: [], error: 'Could not load signup requests.' };
+    }
+    return { requests: data ?? [], error: null };
+  }
+
+  async function decideSignupRequest(requestId, decision, reviewerNote = null) {
+    if (_profile?.role !== 'admin') {
+      return { error: 'Only admins can approve or reject signup requests.' };
+    }
+    if (!requestId) return { error: 'Missing request id.' };
+    if (decision !== 'approved' && decision !== 'rejected') {
+      return { error: 'Decision must be approved or rejected.' };
+    }
+
+    const { data, error } = await _supabase
+      .from('signup_requests')
+      .update({
+        status: decision,
+        reviewer_note: reviewerNote || null,
+        reviewed_at: new Date().toISOString(),
+        reviewed_by: _profile.id,
+      })
+      .eq('id', requestId)
+      .eq('status', 'pending')
+      .select('id, status')
+      .single();
+
+    if (error) {
+      console.error('[Auth] decideSignupRequest error:', error);
+      return { error: 'Could not update request status right now.' };
+    }
+    if (!data) return { error: 'Request is no longer pending.' };
+    return { error: null, request: data };
+  }
+
   function getSession()  { return _session; }
   function getProfile()  { return _profile; }
   function getProperty() { return _property; }
@@ -123,5 +232,17 @@ const Auth = (() => {
     return { profile, property: _property, error: null };
   }
 
-  return { init, signIn, signOut, getSession, getProfile, getProperty, onAuthChange };
+  return {
+    init,
+    signIn,
+    signOut,
+    getPropertiesPublic,
+    requestAccess,
+    listSignupRequests,
+    decideSignupRequest,
+    getSession,
+    getProfile,
+    getProperty,
+    onAuthChange
+  };
 })();

@@ -28,6 +28,25 @@ create table if not exists staff (
   created_at  timestamptz not null default now()
 );
 
+-- Signup/access requests
+create table if not exists signup_requests (
+  id                    uuid primary key default uuid_generate_v4(),
+  full_name             text not null,
+  email                 text not null,
+  requested_property_id uuid references properties on delete set null,
+  note                  text,
+  status                text not null default 'pending'
+                          check (status in ('pending', 'approved', 'rejected')),
+  requested_at          timestamptz not null default now(),
+  reviewed_at           timestamptz,
+  reviewed_by           uuid references auth.users on delete set null,
+  reviewer_note         text
+);
+
+create unique index if not exists signup_requests_pending_email_idx
+  on signup_requests (lower(email))
+  where status = 'pending';
+
 -- ─── Registrations ────────────────────────────────────────────
 create table if not exists registrations (
   id                  text primary key,   -- reg_<timestamp>_<random> (JS generated)
@@ -85,11 +104,18 @@ create trigger trg_registrations_modified
 alter table properties    enable row level security;
 alter table staff         enable row level security;
 alter table registrations enable row level security;
+alter table signup_requests enable row level security;
 
 -- Any authenticated user can read the properties list (needed for login flow)
 create policy "authenticated can read properties"
   on properties for select
   to authenticated
+  using (true);
+
+-- Allow anonymous property read so login/signup request can show property choices
+create policy "anon can read properties"
+  on properties for select
+  to anon
   using (true);
 
 -- Staff can only read their own record
@@ -125,6 +151,42 @@ create policy "staff delete own property registrations"
   to authenticated
   using (
     property_id = (select property_id from staff where id = auth.uid())
+  );
+
+-- Signup requests
+create policy "public can create signup requests"
+  on signup_requests for insert
+  to anon, authenticated
+  with check (
+    status = 'pending'
+    and reviewed_at is null
+    and reviewed_by is null
+  );
+
+create policy "admins can read signup requests"
+  on signup_requests for select
+  to authenticated
+  using (
+    exists (
+      select 1 from staff s
+      where s.id = auth.uid() and s.role = 'admin'
+    )
+  );
+
+create policy "admins can update signup requests"
+  on signup_requests for update
+  to authenticated
+  using (
+    exists (
+      select 1 from staff s
+      where s.id = auth.uid() and s.role = 'admin'
+    )
+  )
+  with check (
+    exists (
+      select 1 from staff s
+      where s.id = auth.uid() and s.role = 'admin'
+    )
   );
 
 -- ─── Seed Data ────────────────────────────────────────────────
