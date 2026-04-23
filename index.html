@@ -7,7 +7,7 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#2b4338">
-  <title>Sparrows Lodge — Digital Registration</title>
+  <title>Digital Registration</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -21,7 +21,7 @@
        ══════════════════════════════════════════════════════ -->
   <div id="step-login" class="step">
     <div class="login-wrap">
-      <div class="login-logo">Sparrows Lodge</div>
+      <div class="login-logo">Digital Registration</div>
       <div class="login-sub">Palm Springs</div>
       <form id="login-form" class="login-form" novalidate>
         <div class="login-field">
@@ -170,22 +170,22 @@
       <div class="step-body-inner">
 
         <div class="upload-intro">
-          <h2>Upload Reservation PDF</h2>
-          <p>Tap below to select the guest's confirmation document. Reservation details will be extracted automatically.</p>
+          <h2>Upload Reservation PDFs</h2>
+          <p>Tap below to select one or more guest confirmation documents. Reservation details will be extracted automatically.</p>
         </div>
 
         <!-- Drop zone — tap or drag-and-drop -->
         <div id="drop-zone" class="drop-zone" role="button" tabindex="0"
-             aria-label="Tap to upload a reservation PDF">
+             aria-label="Tap to upload reservation PDFs">
           <div class="drop-icon" aria-hidden="true">📄</div>
-          <div class="drop-label">Tap to Upload PDF</div>
+          <div class="drop-label">Tap to Upload PDFs</div>
           <div class="drop-sub">or drag and drop</div>
-          <button id="browse-btn" class="browse-btn" type="button">Choose File</button>
+          <button id="browse-btn" class="browse-btn" type="button">Choose Files</button>
         </div>
 
         <!-- Hidden native file picker -->
-        <input id="file-input" type="file" accept=".pdf,application/pdf"
-               style="display:none" aria-label="Select PDF file">
+        <input id="file-input" type="file" accept=".pdf,application/pdf" multiple
+               style="display:none" aria-label="Select PDF files">
 
         <div id="upload-error" class="upload-error" role="alert"></div>
 
@@ -424,7 +424,8 @@
           <!-- Hotel header -->
           <div class="card-header">
             <div class="card-logo">
-              <img src="assets/logo.png" alt="Sparrows Lodge logo" class="brand-logo">
+              <img id="card-brand-logo" src="assets/logo.png" alt="Sparrows Lodge logo" class="brand-logo">
+              <div id="card-logo-text" class="card-logo-text" hidden>Sparrows Lodge</div>
             </div>
           </div>
 
@@ -492,16 +493,8 @@
 
           <!-- Hotel policies -->
           <div class="policy-section">
-            <div class="policy-greeting">Greetings from Sparrow's Lodge!</div>
-            <div class="policy-text">
-              <p>Sparrow's Lodge has a 48-hour cancellation policy. In the event of an early departure, one night's room and tax will be applied to your bill. Payment of all charges must be secured at check-in. Sparrow's Lodge offers physical room keys &mdash; you may be charged $100 for any lost keys.</p>
-              <p>Payment may be made by acceptable credit, debit card, or other management-approved billing methods. Guests paying by credit card acknowledge that their card will be preauthorized for all room and tax charges. Additional authorization is taken to secure guest incidental charges. This includes incidentals or guests whose room and tax charges are being paid by a third party. Any unused authorization is released at the time of check-out. Please note that your financial institution will determine how quickly the authorization is released back to your account.</p>
-              <p>For your convenience, Sparrow's Lodge will create a running account for your charges made at the lobby bar/restaurant. Unless instructed otherwise, a 20% auto gratuity will be automatically added to your account.</p>
-              <p>Pool Hours: 6 am – 11 pm | Flotation devices, any type of ball, and/or amplified music are not permitted in the pool area. Pool use is exclusive to registered guests. There is no glass by the pool at any time. All outside Food and Beverages are strictly prohibited in public areas.</p>
-              <p>Sparrow's Lodge is not responsible for property lost, stolen, or left behind on the property. Sparrow's Lodge offers outdoor parking for guests' convenience and is not responsible for any lost or stolen items from vehicles or damage to vehicles parked on the property.</p>
-              <p>Sparrow's Lodge is 100% non-smoking. A smoking and cleaning fee of $250 will be charged to any room where evidence of smoking is found.</p>
-              <p>We welcome dogs less than 40 pounds with a one-time fee of $100 per stay, per dog. All dogs are required to be on a leash at all times.</p>
-              <p>For your convenience and to enhance your guest experience, we welcome you to participate in the daily resort fee upon arrival. The resort fee includes access to the property Wi-Fi, the Sparrows Lodge breakfast, overnight self-parking, and more. Valued at $75, these amenities are available to our guests for $40 per night.</p>
+            <div id="card-policy-greeting" class="policy-greeting">Greetings from Sparrow's Lodge!</div>
+            <div id="card-policy-text" class="policy-text">
             </div>
             <div class="resort-fee-row" id="card-resort-fee-row" style="display:none">
               <span class="resort-fee-label">Resort Fee</span>
@@ -515,7 +508,7 @@
               <div class="signature-label">Guest Signature</div>
               <div class="signature-line" id="card-signature-line" aria-label="Signature line"></div>
             </div>
-            <div class="card-hotel-address">
+            <div id="card-hotel-address" class="card-hotel-address">
               1330 E. Palm Canyon Drive &middot; Palm Springs, California 92264<br>
               (760) 327-2300 &middot; hello@sparrowslodge.com &middot; sparrowslodge.com
             </div>
@@ -600,6 +593,7 @@
 <script src="js/formPrefiller.js"></script>
 <script src="js/uploader.js"></script>
 <script src="js/carData.js"></script>
+<script src="js/propertyConfig.js"></script>
 <script src="js/questions.js"></script>
 <script src="js/signaturePad.js"></script>
 <script src="js/guestFlow.js"></script>

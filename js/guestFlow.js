@@ -379,28 +379,25 @@ const GuestFlow = (() => {
   }
 
   function _buildPolicy(q) {
+    const property = _propertyConfig();
     const selected = _state[q.field] || 'Approved';
     if (!_state[q.field]) _state[q.field] = 'Approved';
     const isApproved = selected === 'Approved';
     const isDeclined = selected === 'Declined';
+    const policyHtml = (property.policyParagraphs || [])
+      .map(text => `<p>${_esc(text)}</p>`)
+      .join('');
 
     return `
       <div class="guest-slide-inner guest-policy">
         <div class="guest-policy-card">
           <div class="policy-copy">
-            <div class="policy-box-title">Greetings from Sparrow's Lodge!</div>
-            <p>Sparrow's Lodge has a 48-hour cancellation policy. In the event of an early departure, one night's room and tax will be applied to your bill. Payment of all charges must be secured at check-in. Sparrow's Lodge offers physical room keys - you may be charged $100 for any lost keys.</p>
-            <p>Payment may be made by acceptable credit, debit card, or other management-approved billing methods. Guests paying by credit card acknowledge that their card will be preauthorized for all room and tax charges. Additional authorization is taken to secure guest incidental charges. This includes incidentals or guests whose room and tax charges are being paid by a third party. Any unused authorization is released at the time of check-out. Please note that your financial institution will determine how quickly the authorization is released back to your account.</p>
-            <p>For your convenience, Sparrow's Lodge will create a running account for your charges made at the lobby bar/restaurant. Unless instructed otherwise, a 20% auto gratuity will be automatically added to your account.</p>
-            <p>Pool Hours: 6 am - 11 pm | Flotation devices, any type of ball, and/or amplified music are not permitted in the pool area. Pool use is exclusive to registered guests. There is no glass by the pool at any time. All outside Food and Beverages are strictly prohibited in public areas.</p>
-            <p>Sparrow's Lodge is not responsible for property lost, stolen, or left behind on the property. Sparrow's Lodge offers outdoor parking for guests' convenience and is not responsible for any lost or stolen items from vehicles or damage to vehicles parked on the property.</p>
-            <p>Sparrow's Lodge is 100% non-smoking. A smoking and cleaning fee of $250 will be charged to any room where evidence of smoking is found.</p>
-            <p>We welcome dogs less than 40 pounds with a one-time fee of $100 per stay, per dog. All dogs are required to be on a leash at all times.</p>
-            <p>For your convenience and to enhance your guest experience, we welcome you to participate in the daily resort fee upon arrival. The resort fee includes access to the property Wi-Fi, the Sparrows Lodge breakfast, overnight self-parking, and more. Valued at $75, these amenities are available to our guests for $40 per night.</p>
+            <div class="policy-box-title">${_esc(property.policyGreeting)}</div>
+            ${policyHtml}
           </div>
           <div class="policy-choice-row">
-            <button class="policy-choice-btn${isApproved ? ' selected' : ''}" data-policy-choice="Approved" type="button">Opt In - welcome drink, breakfast, bikes, smores, wifi &amp; more ($40 per night)</button>
-            <button class="policy-choice-btn${isDeclined ? ' selected' : ''}" data-policy-choice="Declined" type="button">Opt Out - welcome drink, breakfast, bikes, smores, wifi &amp; more</button>
+            <button class="policy-choice-btn${isApproved ? ' selected' : ''}" data-policy-choice="Approved" type="button">${_esc(property.resortFeeOptInText)}</button>
+            <button class="policy-choice-btn${isDeclined ? ' selected' : ''}" data-policy-choice="Declined" type="button">Opt Out</button>
           </div>
         </div>
       </div>`;
@@ -590,6 +587,7 @@ const GuestFlow = (() => {
   }
 
   function _buildSignature() {
+    const property = _propertyConfig();
     return `
       <div class="guest-slide-inner guest-sig-slide">
         <div class="gs-label">Signature</div>
@@ -598,16 +596,22 @@ const GuestFlow = (() => {
           <div class="sig-baseline"></div>
         </div>
         <button class="sig-clear-btn" type="button">Clear</button>
-        <p class="gs-sub sig-agreement">By signing above you agree to Sparrows Lodge hotel policies.</p>
+        <p class="gs-sub sig-agreement">${_esc(property.signatureAgreement)}</p>
       </div>`;
   }
 
   function _buildComplete() {
-    const fullName = (_state.guestName || '').trim();
-    const guestName = (fullName.split(/\s+/)[0] || '').trim() || 'Guest';
+    const property = _propertyConfig();
+    if (property.completeImageSrc) {
+      return `
+        <div class="guest-slide-inner guest-complete">
+          <img src="${_esc(property.completeImageSrc)}" alt="You're all set" class="guest-complete-img">
+        </div>`;
+    }
+
     return `
       <div class="guest-slide-inner guest-complete">
-        <img src="assets/youre all set bird.png" alt="You're all set" class="guest-complete-img">
+        <div class="guest-complete-heading">You're all set.</div>
       </div>`;
   }
 
@@ -772,6 +776,17 @@ const GuestFlow = (() => {
   }
 
   // ─── Helpers ──────────────────────────────────────────────────
+
+  function _propertyConfig() {
+    return window.PropertyConfig?.current?.() || {
+      name: 'Sparrows Lodge',
+      policyGreeting: "Greetings from Sparrow's Lodge!",
+      policyParagraphs: [],
+      resortFeeOptInText: 'Opt In',
+      signatureAgreement: 'By signing above you agree to hotel policies.',
+      completeImageSrc: null,
+    };
+  }
 
   function _esc(str) {
     return String(str ?? '')

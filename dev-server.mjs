@@ -2,7 +2,7 @@ import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 
-const PORT = 5500;
+const PORT = Number(process.env.PORT || 5500);
 const ROOT = process.cwd();
 
 const MIME = {
@@ -17,7 +17,7 @@ const MIME = {
   '.ico': 'image/x-icon'
 };
 
-createServer(async (req, res) => {
+const server = createServer(async (req, res) => {
   try {
     const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
     const requested = urlPath === '/' ? '/index.html' : urlPath;
@@ -32,6 +32,20 @@ createServer(async (req, res) => {
     res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
     res.end('Not found');
   }
-}).listen(PORT, () => {
-  console.log(`Dev server running at http://localhost:${PORT}`);
 });
+
+function listen(port) {
+  server.listen(port, () => {
+    console.log(`Dev server running at http://localhost:${port}`);
+  });
+}
+
+server.on('error', err => {
+  if (err.code === 'EADDRINUSE') {
+    listen((err.port || PORT) + 1);
+    return;
+  }
+  throw err;
+});
+
+listen(PORT);

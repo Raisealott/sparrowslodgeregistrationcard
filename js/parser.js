@@ -119,13 +119,38 @@ const Parser = (() => {
       }
     }
 
-    // Fallback: "Nightly Rate: 426.00 USD" (single rate, no date ranges)
-    let m = text.match(/Nightly\s+Rate[:\s]+([\d,]+\.?\d*)\s*(?:USD)?/i);
-    if (m) return { value: m[1].replace(/,/g, ''), confidence: 'medium' };
+    // Fallback: labeled single rate. Handles variants like:
+    // "Nightly Rate: 426.00 USD" and "Avg. Nightly Rate (USD) * 426.00".
+    const labeledRate = findPositiveRateNearLabel(text, /(?:Avg\.?\s*)?Nightly\s+Rate(?:\s*\([^)]*\))?/i);
+    if (labeledRate) return { value: labeledRate, confidence: 'medium' };
 
     // Last resort: any dollar-ish amount near a rate keyword on the same line
-    m = text.match(/(?:rate|room)[^\n]{0,30}?([\d,]+\.\d{2})\s*(?:USD)?/i);
-    if (m) return { value: m[1].replace(/,/g, ''), confidence: 'low' };
+    const fallbackRate = findPositiveRateNearLabel(text, /(?:rate|room)/i, 80);
+    if (fallbackRate) return { value: fallbackRate, confidence: 'low' };
+
+    return null;
+  }
+
+  function findPositiveRateNearLabel(text, labelPattern, windowSize = 220) {
+    const label = text.match(labelPattern);
+    if (!label) return null;
+
+    const afterLabel = text.slice(label.index + label[0].length, label.index + label[0].length + windowSize);
+
+    const usdAmount = afterLabel.match(/([\d,]+(?:\.\d{2})?)\s*USD/i);
+    if (usdAmount) {
+      const normalized = usdAmount[1].replace(/[^0-9.]/g, '');
+      const num = parseFloat(normalized);
+      if (!Number.isNaN(num) && num > 0) return normalized;
+    }
+
+    const amounts = afterLabel.match(/\$?\s*[\d,]+(?:\.\d{2})?\s*(?:USD)?/gi) || [];
+
+    for (const amount of amounts) {
+      const normalized = amount.replace(/[^0-9.]/g, '');
+      const num = parseFloat(normalized);
+      if (!Number.isNaN(num) && num >= 10) return normalized;
+    }
 
     return null;
   }

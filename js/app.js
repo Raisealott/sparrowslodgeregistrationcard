@@ -17,6 +17,7 @@ const App = (() => {
   let _unsubscribe   = null;  // real-time subscription cleanup
   let _dashboardSearchEntries = []; // in-memory source for name suggestions
   let _requestPanelOpen = false;
+  let _isGeneratingCard = false;
 
   // â”€â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -46,7 +47,8 @@ const App = (() => {
 
   async function init() {
     _initDeleteModal();
-    Uploader.init(onFileSelected);
+    _applyPropertyConfig(PropertyConfig.current());
+    Uploader.init(onFilesSelected);
 
     // Review step
     document.getElementById('btn-confirm')?.addEventListener('click', onConfirm);
@@ -120,11 +122,7 @@ const App = (() => {
   }
 
   async function _onAuthenticated() {
-    // Update property name in header
-    const property = Auth.getProperty();
-    document.querySelectorAll('.hotel-name').forEach(el => {
-      if (property?.name) el.textContent = property.name;
-    });
+    _applyPropertyConfig(PropertyConfig.current());
 
     // Seed today's date in the dashboard header
     const dateEl = document.getElementById('dashboard-date');
@@ -700,6 +698,16 @@ const App = (() => {
 
   // â”€â”€â”€ PDF pipeline â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
+  async function onFilesSelected(files) {
+    const selectedFiles = Array.isArray(files) ? files : [files];
+    if (selectedFiles.length === 1) {
+      await onFileSelected(selectedFiles[0]);
+      return;
+    }
+
+    await onBatchFilesSelected(selectedFiles);
+  }
+
   async function onFileSelected(file) {
     goToStep('processing');
     try {
@@ -733,32 +741,218 @@ const App = (() => {
     }
   }
 
+  function _applyPropertyConfig(config) {
+    if (!config) return;
+
+    document.title = `${config.name} - Digital Registration`;
+
+    document.querySelectorAll('.hotel-name').forEach(el => {
+      el.textContent = config.name;
+    });
+    document.querySelectorAll('.hotel-sub').forEach(el => {
+      el.textContent = config.subTitle || '';
+    });
+
+    const loginLogo = document.querySelector('.login-logo');
+    const loginSub = document.querySelector('.login-sub');
+    if (loginLogo) loginLogo.textContent = config.name;
+    if (loginSub) loginSub.textContent = config.subTitle || '';
+
+    const cardLogo = document.getElementById('card-brand-logo');
+    const cardLogoText = document.getElementById('card-logo-text');
+    if (cardLogo && cardLogoText) {
+      if (config.logoSrc) {
+        cardLogo.src = config.logoSrc;
+        cardLogo.alt = config.logoAlt || `${config.name} logo`;
+        cardLogo.hidden = false;
+        cardLogoText.hidden = true;
+      } else {
+        cardLogo.hidden = true;
+        cardLogoText.textContent = config.name;
+        cardLogoText.hidden = false;
+      }
+    }
+
+    const guestHomeImg = document.querySelector('.guest-welcome-art-img');
+    if (guestHomeImg) {
+      if (config.guestHomeLogoSrc) {
+        guestHomeImg.src = config.guestHomeLogoSrc;
+        guestHomeImg.hidden = false;
+      } else {
+        guestHomeImg.hidden = true;
+      }
+    }
+
+    const policyGreeting = document.getElementById('card-policy-greeting');
+    const policyText = document.getElementById('card-policy-text');
+    if (policyGreeting) policyGreeting.textContent = config.policyGreeting || '';
+    if (policyText) {
+      policyText.innerHTML = (config.policyParagraphs || [])
+        .map(text => `<p>${_escapeHtml(text)}</p>`)
+        .join('');
+    }
+
+    const address = document.getElementById('card-hotel-address');
+    if (address) {
+      address.innerHTML = (config.addressLines || [])
+        .map(_escapeHtml)
+        .join('<br>');
+    }
+  }
+
+  async function onBatchFilesSelected(files) {
+    goToStep('processing');
+    updateProcessingText(`Extracting ${files.length} Reservation PDFs`, 'Saving each document as a current registration...');
+
+    try {
+      const results = await Promise.all(files.map(file => processPdfForBatch(file)));
+      const successful = results.filter(result => result.ok);
+      const failed = results.filter(result => !result.ok);
+
+      if (successful.length === 0) {
+        goToStep('upload');
+        showUploadError('Could not read these PDFs. Please check the files and try again.');
+        return;
+      }
+
+      await Promise.all(successful.map(result => DB.add(result.entry)));
+
+      _parsedData = null;
+      _currentId = null;
+      await renderDashboard();
+      goToStep('dashboard');
+
+      if (failed.length > 0) {
+        window.alert(`${successful.length} PDF${successful.length === 1 ? '' : 's'} uploaded. ${failed.length} could not be read.`);
+      }
+    } catch (err) {
+      console.error('[App] Batch PDF processing error:', err);
+      goToStep('upload');
+      showUploadError('Could not read these PDFs. Please check the files and try again.');
+    } finally {
+      updateProcessingText('Extracting Reservation Details', 'This usually takes just a moment...');
+    }
+  }
+
+  async function processPdfForBatch(file) {
+    try {
+      const { text, isImagePdf } = await PdfExtractor.extractText(file);
+      if (isImagePdf) return { ok: false, file, reason: 'image-pdf' };
+
+      const parsed = Parser.parse(text);
+      const validation = Validator.validateAll(parsed);
+      const now = new Date().toISOString();
+
+      return {
+        ok: true,
+        file,
+        validation,
+        entry: {
+          id:          DB.generateId(),
+          status:      'current',
+          createdAt:   now,
+          completedAt: null,
+          fields:      parsedToFields(parsed),
+          rateLines:   sanitizeRateLines(parsed.rateLines),
+        },
+      };
+    } catch (err) {
+      console.error('[App] Batch PDF item failed:', file?.name, err);
+      return { ok: false, file, reason: 'error' };
+    }
+  }
+
+  function parsedToFields(parsed) {
+    const value = key => parsed[key]?.value ?? '';
+    const rateNum = FieldNormalizer.normalizeRate(value('nightlyRate'));
+
+    return {
+      guestName:          value('guestName'),
+      confirmationNumber: value('confirmationNumber'),
+      arrivalDate:        FieldNormalizer.normalizeDate(value('arrivalDate')) ?? value('arrivalDate'),
+      departureDate:      FieldNormalizer.normalizeDate(value('departureDate')) ?? value('departureDate'),
+      roomType:           value('roomType'),
+      nightlyRate:        rateNum !== null ? rateNum.toFixed(2) : value('nightlyRate'),
+      adults:             value('adults'),
+      email:              value('email'),
+      phone:              value('phone'),
+      carMake:            '',
+      carModel:           '',
+      carColor:           '',
+      resortFeeConsent:   '',
+    };
+  }
+
+  function updateProcessingText(label, sub) {
+    const labelEl = document.querySelector('#step-processing .processing-label');
+    const subEl = document.querySelector('#step-processing .processing-sub');
+    if (labelEl) labelEl.textContent = label;
+    if (subEl) subEl.textContent = sub;
+  }
+
+  function showUploadError(message) {
+    const el = document.getElementById('upload-error');
+    if (el) { el.textContent = message; el.style.display = 'block'; }
+  }
+
   // â”€â”€â”€ Review â†’ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async function onConfirm() {
-    const values   = readReviewForm();
-    const existing = _currentId ? await DB.getById(_currentId) : null;
-    const merged   = { ...(existing?.fields ?? {}), ...values };
-    const now      = new Date().toISOString();
+    if (_isGeneratingCard) return;
 
-    if (_currentId) {
-      await DB.update(_currentId, { fields: merged, rateLines: _parsedData?.rateLines ?? [] });
-    } else {
-      const entry = await DB.add({
-        id:          DB.generateId(),
-        status:      'current',
-        createdAt:   now,
-        completedAt: null,
-        fields:      merged,
-        rateLines:   _parsedData?.rateLines ?? [],
-      });
-      _currentId = entry.id;
+    const btn = document.getElementById('btn-confirm');
+    _isGeneratingCard = true;
+    if (btn) {
+      btn.disabled = true;
+      btn.dataset.originalText = btn.dataset.originalText || btn.textContent;
+      btn.textContent = 'Generating...';
     }
 
-    const saved = await DB.getById(_currentId);
-    goToStep('card');
-    renderCard(merged, saved);
-    updateCardButtons('current');
+    try {
+      const values       = readReviewForm();
+      const existing     = _currentId ? await DB.getById(_currentId) : null;
+      const merged       = { ...(existing?.fields ?? {}), ...values };
+      const now          = new Date().toISOString();
+      const rateLines    = sanitizeRateLines(_parsedData?.rateLines);
+      const id           = _currentId || DB.generateId();
+      const previewEntry = {
+        ...(existing ?? {}),
+        id,
+        status:      'current',
+        createdAt:   existing?.createdAt || now,
+        completedAt: existing?.completedAt ?? null,
+        fields:      merged,
+        rateLines,
+      };
+
+      _currentId  = id;
+      _parsedData = { ...(_parsedData ?? {}), rateLines };
+
+      goToStep('card');
+      renderCard(merged, previewEntry);
+      updateCardButtons('current');
+
+      if (existing) {
+        const saved = await DB.update(id, { fields: merged, rateLines });
+        if (saved) renderCard(saved.fields, saved);
+      } else {
+        const saved = await DB.add(previewEntry);
+        if (saved) {
+          _currentId = saved.id;
+          renderCard(saved.fields, saved);
+        }
+      }
+    } catch (err) {
+      console.error('[App] Generate card failed:', err);
+      goToStep('review');
+      showBanner('error', 'Could not generate this card. Please check the fields and try again.');
+    } finally {
+      _isGeneratingCard = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = btn.dataset.originalText || 'Generate Card ->';
+      }
+    }
   }
 
   function populateReviewForm(fields) {
@@ -972,11 +1166,11 @@ const App = (() => {
     // Rate change lines
     const linesContainer = document.getElementById('card-rate-lines');
     const rateSection    = linesContainer?.closest('.rate-changes-section');
-    const lines          = _parsedData?.rateLines ?? [];
+    const lines          = sanitizeRateLines(_parsedData?.rateLines);
     if (linesContainer) {
       if (lines.length > 0) {
         linesContainer.innerHTML = lines
-          .map(l => `<div class="card-rate-line">${l.startDate} - ${l.endDate} &nbsp; <strong>$${l.rate.toFixed(2)} USD</strong></div>`)
+          .map(l => `<div class="card-rate-line">${l.startDate} - ${l.endDate} &nbsp; <strong>${FieldNormalizer.formatRate(l.rate)} USD</strong></div>`)
           .join('');
         if (rateSection) rateSection.style.display = '';
       } else {
@@ -984,6 +1178,17 @@ const App = (() => {
         if (rateSection) rateSection.style.display = 'none';
       }
     }
+  }
+
+  function sanitizeRateLines(lines) {
+    if (!Array.isArray(lines)) return [];
+    return lines
+      .map(line => ({
+        startDate: line?.startDate || '',
+        endDate:   line?.endDate   || '',
+        rate:      FieldNormalizer.normalizeRate(line?.rate),
+      }))
+      .filter(line => line.startDate && line.endDate && line.rate !== null);
   }
 
   // â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -1050,6 +1255,14 @@ const App = (() => {
     el.className = `validation-banner banner-${type}`;
     el.textContent = message;
     el.style.display = 'block';
+  }
+
+  function _escapeHtml(value) {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   return { init };

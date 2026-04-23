@@ -190,19 +190,26 @@ create policy "admins can update signup requests"
   );
 
 -- ─── Seed Data ────────────────────────────────────────────────
-insert into properties (name, slug, address, phone, website) values
+insert into properties (name, slug, address, phone, email, website) values
   (
     'Sparrows Lodge',
     'sparrows-lodge',
     '1330 E Palm Canyon Dr, Palm Springs, CA 92264',
     '(760) 327-2300',
+    'hello@sparrowslodge.com',
     'https://sparrowslodge.com'
   ),
   (
     'Holiday House',
     'holiday-house',
-    'Palm Springs, CA',
-    null,
-    null
+    '200 W Arenas Rd, Palm Springs, CA 92262',
+    '(760) 320-8866',
+    'hello@holidayhouseps.com',
+    'https://holidayhouseps.com'
   )
-on conflict (slug) do nothing;
+on conflict (slug) do update set
+  name = excluded.name,
+  address = excluded.address,
+  phone = excluded.phone,
+  email = excluded.email,
+  website = excluded.website;

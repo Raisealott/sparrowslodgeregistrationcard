@@ -38,8 +38,10 @@ const Validator = (() => {
   /** Validate a single parsed field result. */
   function validateField(key, result) {
     const hasValue = result && result.value != null && String(result.value).trim() !== '';
+    const isZeroNightlyRate = key === 'nightlyRate' && hasValue
+      && parseFloat(String(result.value).replace(/[^0-9.]/g, '')) <= 0;
 
-    if (!hasValue) {
+    if (!hasValue || isZeroNightlyRate) {
       // Optional fields stay neutral when empty.
       if (!REQUIRED.has(key)) {
         return { status: 'ok', message: '' };

@@ -7,10 +7,10 @@ const Uploader = (() => {
 
   const MAX_FILE_SIZE_MB = 20;
 
-  let _onFileSelected = null;
+  let _onFilesSelected = null;
 
-  function init(onFileSelected) {
-    _onFileSelected = onFileSelected;
+  function init(onFilesSelected) {
+    _onFilesSelected = onFilesSelected;
 
     const dropZone  = document.getElementById('drop-zone');
     const fileInput = document.getElementById('file-input');
@@ -33,7 +33,7 @@ const Uploader = (() => {
     // Native file input change
     fileInput.addEventListener('change', e => {
       if (e.target.files.length > 0) {
-        handleFile(e.target.files[0]);
+        handleFiles([...e.target.files]);
         // Reset so the same file can be re-uploaded if needed
         e.target.value = '';
       }
@@ -50,25 +50,29 @@ const Uploader = (() => {
     dropZone.addEventListener('drop', e => {
       e.preventDefault();
       dropZone.classList.remove('drag-over');
-      const file = e.dataTransfer?.files?.[0];
-      if (file) handleFile(file);
+      const files = [...(e.dataTransfer?.files ?? [])];
+      if (files.length) handleFiles(files);
     });
   }
 
-  function handleFile(file) {
+  function handleFiles(files) {
     clearError();
 
-    if (!file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')) {
-      showError('Please upload a PDF file.');
+    const invalid = files.find(file =>
+      !file.type.includes('pdf') && !file.name.toLowerCase().endsWith('.pdf')
+    );
+    if (invalid) {
+      showError('Please upload PDF files only.');
       return;
     }
 
-    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+    const oversized = files.find(file => file.size > MAX_FILE_SIZE_MB * 1024 * 1024);
+    if (oversized) {
       showError(`File is too large. Maximum size is ${MAX_FILE_SIZE_MB} MB.`);
       return;
     }
 
-    _onFileSelected?.(file);
+    _onFilesSelected?.(files);
   }
 
   function showError(message) {

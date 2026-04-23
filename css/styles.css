@@ -675,6 +675,14 @@ html, body {
   margin: 0 auto;
   margin-bottom: -18px;
 }
+.card-logo-text {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+}
 .card-hotel-name {
   font-family: var(--mono);
   font-size: 18px;
