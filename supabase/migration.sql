@@ -106,6 +106,18 @@ alter table staff         enable row level security;
 alter table registrations enable row level security;
 alter table signup_requests enable row level security;
 
+-- Make migration re-runnable by dropping policies before re-creating them
+drop policy if exists "authenticated can read properties" on properties;
+drop policy if exists "anon can read properties" on properties;
+drop policy if exists "staff read own record" on staff;
+drop policy if exists "staff read own property registrations" on registrations;
+drop policy if exists "staff insert own property registrations" on registrations;
+drop policy if exists "staff update own property registrations" on registrations;
+drop policy if exists "staff delete own property registrations" on registrations;
+drop policy if exists "public can create signup requests" on signup_requests;
+drop policy if exists "admins can read signup requests" on signup_requests;
+drop policy if exists "admins can update signup requests" on signup_requests;
+
 -- Any authenticated user can read the properties list (needed for login flow)
 create policy "authenticated can read properties"
   on properties for select

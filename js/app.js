@@ -18,6 +18,7 @@ const App = (() => {
   let _dashboardSearchEntries = []; // in-memory source for name suggestions
   let _requestPanelOpen = false;
   let _isGeneratingCard = false;
+  let _dashboardRenderTimer = null;
 
   // â”€â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -70,7 +71,7 @@ const App = (() => {
     document.getElementById('btn-sign-out')?.addEventListener('click', onSignOut);
     document.getElementById('dashboard-search-input')?.addEventListener('input', e => {
       _renderNameSuggestions(e.target.value);
-      renderDashboard();
+      _scheduleDashboardRender();
     });
     document.getElementById('dashboard-search-input')?.addEventListener('focus', e => {
       _renderNameSuggestions(e.target.value);
@@ -177,9 +178,25 @@ const App = (() => {
     }
   }
   async function onSignOut() {
+    const btn = document.getElementById('btn-sign-out');
+    if (btn?.disabled) return;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Signing Out...';
+    }
+
     if (_unsubscribe) { _unsubscribe(); _unsubscribe = null; }
-    await Auth.signOut();
-    goToStep('login');
+    try {
+      await Auth.signOut();
+    } catch (err) {
+      console.error('[App] onSignOut error:', err);
+    } finally {
+      goToStep('login');
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Sign Out';
+      }
+    }
   }
 
   async function _initRequestAccessForm() {
@@ -325,7 +342,7 @@ const App = (() => {
     }
   }
 
-  // â”€â”€â”€ Step navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ─── Step navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   function goToStep(name) {
     document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
@@ -365,6 +382,14 @@ const App = (() => {
   function _readDashboardSearch() {
     const query = document.getElementById('dashboard-search-input')?.value?.trim() || '';
     return { query };
+  }
+
+  function _scheduleDashboardRender(delay = 120) {
+    if (_dashboardRenderTimer) clearTimeout(_dashboardRenderTimer);
+    _dashboardRenderTimer = setTimeout(() => {
+      _dashboardRenderTimer = null;
+      renderDashboard();
+    }, delay);
   }
 
   function _filterDashboardEntries(entries, search) {
@@ -744,7 +769,15 @@ const App = (() => {
   function _applyPropertyConfig(config) {
     if (!config) return;
 
-    document.title = `${config.name} - Digital Registration`;
+    document.title = 'Hotel Guest Registration';
+    const slug = config.slug || '';
+    if (slug) {
+      document.documentElement.setAttribute('data-property-slug', slug);
+      document.body?.setAttribute('data-property-slug', slug);
+    } else {
+      document.documentElement.removeAttribute('data-property-slug');
+      document.body?.removeAttribute('data-property-slug');
+    }
 
     document.querySelectorAll('.hotel-name').forEach(el => {
       el.textContent = config.name;
@@ -755,8 +788,8 @@ const App = (() => {
 
     const loginLogo = document.querySelector('.login-logo');
     const loginSub = document.querySelector('.login-sub');
-    if (loginLogo) loginLogo.textContent = config.name;
-    if (loginSub) loginSub.textContent = config.subTitle || '';
+    if (loginLogo) loginLogo.textContent = 'Hotel Guest Registration';
+    if (loginSub) loginSub.textContent = '';
 
     const cardLogo = document.getElementById('card-brand-logo');
     const cardLogoText = document.getElementById('card-logo-text');
@@ -1269,5 +1302,6 @@ const App = (() => {
 })();
 
 document.addEventListener('DOMContentLoaded', () => App.init());
+
 
 

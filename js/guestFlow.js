@@ -351,7 +351,6 @@ const GuestFlow = (() => {
         <input
           class="guest-input stack-input${isContactStep && _state[inp.field] ? ' is-prefilled' : ''}"
           type="${_esc(inp.inputType || 'text')}"
-          placeholder="${_esc(inp.placeholder || '')}"
           value="${_esc(_state[inp.field] || '')}"
           data-field="${_esc(inp.field)}"
           data-stack-index="${i}"
@@ -542,7 +541,6 @@ const GuestFlow = (() => {
         <input
           class="guest-input"
           type="${q.inputType || 'text'}"
-          placeholder="${_esc(q.placeholder || '')}"
           value="${_esc(prefilled)}"
           autocomplete="off"
           autocorrect="off"
@@ -639,15 +637,15 @@ const GuestFlow = (() => {
     if (artSlot) artSlot.style.display = (q.type === 'welcome') ? 'flex' : 'none';
 
     const labels = {
-      welcome:   'Begin Check-In  →',
-      policy:    'Continue  →',
-      confirm:   'Yes, Continue  →',
-      text:      'Continue  →',
-      review:    'Looks Good  →',
-      signature: 'I Agree & Sign  →',
+      welcome:   'Begin Check-In  ->',
+      policy:    'Continue  ->',
+      confirm:   'Yes, Continue  ->',
+      text:      'Continue  ->',
+      review:    'Looks Good  ->',
+      signature: 'I Agree & Sign  ->',
       complete:  'Return to Front Desk',
     };
-    nextBtn.textContent = labels[q.type] ?? 'Continue  →';
+    nextBtn.textContent = labels[q.type] ?? 'Continue  ->';
   }
 
   // ─── Error display ────────────────────────────────────────────

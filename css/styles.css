@@ -10,6 +10,17 @@
   --touch: 52px;
 }
 
+@font-face {
+  font-family: 'Vignetta Regular';
+  src:
+    local('Vignetta Regular'),
+    local('Vignetta'),
+    url('../assets/vignetta_fontlot1474.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0; padding: 0;
@@ -27,6 +38,12 @@ html, body {
 }
 
 .app { height: 100%; }
+
+/* Global typography override: all properties use Catamaran Bold everywhere */
+* {
+  font-family: 'Catamaran', sans-serif !important;
+  font-weight: 700 !important;
+}
 
 .sr-only {
   position: absolute;
@@ -185,6 +202,10 @@ html, body {
 }
 .btn-secondary:active { background: #f0f0f0; }
 
+button {
+  touch-action: manipulation;
+}
+
 
 /* ════════════════════════════════════════════════════════════
    STEP 0 — DASHBOARD
@@ -211,6 +232,32 @@ html, body {
   margin-left: auto;
 }
 
+.dashboard-search-wrap::before {
+  content: "";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #777;
+  border-radius: 50%;
+  transform: translateY(-58%) scaleX(-1);
+  pointer-events: none;
+}
+
+.dashboard-search-wrap::after {
+  content: "";
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  width: 6px;
+  height: 2px;
+  background: #777;
+  transform: translateY(2px) rotate(-45deg) scaleX(-1);
+  transform-origin: right center;
+  pointer-events: none;
+}
+
 .dashboard-search-input {
   height: 30px;
   width: 220px;
@@ -219,7 +266,7 @@ html, body {
   color: #000;
   font-family: var(--mono);
   font-size: 12px;
-  padding: 0 10px;
+  padding: 0 34px 0 10px;
   border-radius: 0;
   display: block;
 }
@@ -671,9 +718,11 @@ html, body {
   display: block;
   width: 50%;
   max-width: 320px;
+  max-height: 70px;
   height: auto;
+  object-fit: contain;
   margin: 0 auto;
-  margin-bottom: -18px;
+  margin-bottom: 2px;
 }
 .card-logo-text {
   font-size: 24px;
@@ -791,6 +840,72 @@ html, body {
 .policy-text { font-size: 11px; color: #333; line-height: 1.75; }
 .policy-text p { margin-bottom: 7px; }
 .policy-text p:last-child { margin-bottom: 0; }
+
+/* Holiday House only: use Catamaran Bold across selected UI text groups */
+html[data-property-slug="holiday-house"] .hotel-sub,
+html[data-property-slug="holiday-house"] .dashboard-date,
+html[data-property-slug="holiday-house"] .list-group-title,
+html[data-property-slug="holiday-house"] .list-group-count,
+html[data-property-slug="holiday-house"] .entry-name,
+html[data-property-slug="holiday-house"] .entry-meta,
+html[data-property-slug="holiday-house"] .entry-timestamp,
+html[data-property-slug="holiday-house"] .entry-dates,
+html[data-property-slug="holiday-house"] .entry-badge,
+html[data-property-slug="holiday-house"] .card-section-label,
+html[data-property-slug="holiday-house"] .card-field-label,
+html[data-property-slug="holiday-house"] .card-field-value,
+html[data-property-slug="holiday-house"] .policy-greeting,
+html[data-property-slug="holiday-house"] .policy-text p,
+html[data-property-slug="holiday-house"] .card-hotel-address,
+html[data-property-slug="holiday-house"] .signature-label,
+html[data-property-slug="holiday-house"] .gs-label,
+html[data-property-slug="holiday-house"] .gs-sub,
+html[data-property-slug="holiday-house"] .gw-greeting,
+html[data-property-slug="holiday-house"] .gw-sub,
+html[data-property-slug="holiday-house"] .guest-policy-card p,
+html[data-property-slug="holiday-house"] .policy-box-title,
+html[data-property-slug="holiday-house"] .review-row-label,
+html[data-property-slug="holiday-house"] .review-row-value,
+html[data-property-slug="holiday-house"] .guest-complete-heading,
+html[data-property-slug="holiday-house"] .btn-primary,
+html[data-property-slug="holiday-house"] .btn-secondary,
+html[data-property-slug="holiday-house"] .btn-sign-out,
+html[data-property-slug="holiday-house"] .policy-choice-btn {
+  font-family: 'Catamaran', var(--mono);
+  font-weight: 700;
+}
+
+/* Holiday House only: page/section titles in Vignetta Regular */
+html[data-property-slug="holiday-house"] .hotel-name,
+html[data-property-slug="holiday-house"] .step-title,
+html[data-property-slug="holiday-house"] .dashboard-section-heading,
+html[data-property-slug="holiday-house"] .list-group-title,
+html[data-property-slug="holiday-house"] .card-section-label,
+html[data-property-slug="holiday-house"] .gs-label,
+html[data-property-slug="holiday-house"] .policy-box-title,
+html[data-property-slug="holiday-house"] .gw-greeting {
+  font-family: 'Vignetta Regular', 'Catamaran', var(--mono);
+  font-weight: 400;
+}
+
+html[data-property-slug="holiday-house"] .hotel-name {
+  text-transform: none;
+  letter-spacing: 0.06em;
+  font-size: clamp(24px, 2.2vw, 34px);
+  line-height: 1.1;
+}
+
+/* Global header casing */
+.hotel-name,
+.step-title,
+.dashboard-section-heading,
+.list-group-title,
+.card-section-label,
+.gs-label,
+.policy-box-title,
+h1, h2, h3, h4, h5, h6 {
+  text-transform: uppercase !important;
+}
 
 /* Signature */
 .signature-section { padding: 12px 16px 12px; }
@@ -981,7 +1096,7 @@ html, body {
 
 /* ── Layout shell ─────────────────────────────────────────── */
 
-#step-guest { background: #fff; }
+#step-guest { background: #CAD9EA; }
 
 .guest-progress {
   flex-shrink: 0;
@@ -999,6 +1114,7 @@ html, body {
   flex: 1;
   position: relative;
   overflow: hidden;
+  background: #CAD9EA;
 }
 
 .guest-nav {
@@ -1074,6 +1190,7 @@ html, body {
   justify-content: center;
   padding: 32px 28px 24px;
   overflow-y: auto;
+  background: #CAD9EA;
   -webkit-overflow-scrolling: touch;
   transition: transform 0.32s cubic-bezier(0.4,0,0.2,1), opacity 0.32s;
 }
@@ -1082,6 +1199,64 @@ html, body {
 .guest-slide.slide-active      { transform: translateX(0); opacity: 1; }
 .guest-slide.slide-exit-left   { transform: translateX(-100%); opacity: 0; }
 .guest-slide.slide-exit-right  { transform: translateX(100%); opacity: 0; }
+
+/* Holiday House decorative art on selected guest slides */
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="welcome"],
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="contact"],
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="vehicle"],
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="signature"],
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="complete"] {
+  padding-top: 98px;
+  padding-bottom: 98px;
+}
+
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="welcome"]::before,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="contact"]::before,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="vehicle"]::before,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="signature"]::before,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="complete"]::before,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="welcome"]::after,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="contact"]::after,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="vehicle"]::after,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="signature"]::after,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="complete"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: clamp(52px, 9vw, 100px);
+  background-image: url("../assets/mixed blue squares.png");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="welcome"]::before,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="contact"]::before,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="vehicle"]::before,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="signature"]::before,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="complete"]::before {
+  top: 0;
+}
+
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="welcome"]::after,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="contact"]::after,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="vehicle"]::after,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="signature"]::after,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="complete"]::after {
+  bottom: 0;
+}
+
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="welcome"] .guest-slide-inner,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="contact"] .guest-slide-inner,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="vehicle"] .guest-slide-inner,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="signature"] .guest-slide-inner,
+html[data-property-slug="holiday-house"] .guest-slide[data-qid="complete"] .guest-slide-inner {
+  position: relative;
+  z-index: 1;
+}
 
 .guest-slide-inner {
   width: 100%;
@@ -1849,17 +2024,24 @@ html, body {
 
 /* Sign-out — sits alongside the New Registration button */
 .btn-sign-out {
+  min-height: var(--touch);
+  min-width: 96px;
   font-family: 'Courier Prime', monospace;
   font-size: 13px;
   color: #888;
-  background: none;
-  border: none;
+  background: #fff;
+  border: 2px solid #000;
   cursor: pointer;
-  padding: 8px 0;
+  padding: 0 14px;
   letter-spacing: 0.04em;
-  text-decoration: underline;
+  white-space: nowrap;
 }
 
 .btn-sign-out:hover {
   color: #1a1a1a;
+}
+
+.btn-sign-out:disabled {
+  opacity: 0.65;
+  cursor: default;
 }

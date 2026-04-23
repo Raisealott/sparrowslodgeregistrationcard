@@ -66,7 +66,8 @@ const Auth = (() => {
   }
 
   async function signOut() {
-    await _supabase.auth.signOut();
+    // Local scope clears the client session immediately without waiting on network.
+    await _supabase.auth.signOut({ scope: 'local' });
     _session  = null;
     _profile  = null;
     _property = null;

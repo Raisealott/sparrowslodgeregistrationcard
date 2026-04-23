@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -7,33 +7,32 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="theme-color" content="#2b4338">
-  <title>Digital Registration</title>
+  <title>Hotel Guest Registration</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Catamaran:wght@700&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <div class="app">
 
-  <!-- ══════════════════════════════════════════════════════
-       STEP — LOGIN
-       ══════════════════════════════════════════════════════ -->
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       STEP â€” LOGIN
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div id="step-login" class="step">
     <div class="login-wrap">
-      <div class="login-logo">Digital Registration</div>
-      <div class="login-sub">Palm Springs</div>
+      <div class="login-logo">Hotel Guest Registration</div>
+      <div class="login-sub"></div>
       <form id="login-form" class="login-form" novalidate>
         <div class="login-field">
           <label class="login-label" for="login-email">Email</label>
           <input id="login-email" class="login-input" type="email"
-                 autocomplete="username" autocapitalize="none" spellcheck="false"
-                 placeholder="staff@sparrowslodge.com">
+                 autocomplete="username" autocapitalize="none" spellcheck="false">
         </div>
         <div class="login-field">
           <label class="login-label" for="login-password">Password</label>
           <input id="login-password" class="login-input" type="password"
-                 autocomplete="current-password" placeholder="••••••••">
+                 autocomplete="current-password">
         </div>
         <div id="login-error" class="login-error" hidden></div>
         <button id="btn-login" class="btn-primary login-btn" type="submit">Sign In</button>
@@ -44,13 +43,13 @@
           <div class="login-field">
             <label class="login-label" for="request-full-name">Full Name</label>
             <input id="request-full-name" class="login-input" type="text"
-                   autocomplete="name" placeholder="Jane Doe">
+                   autocomplete="name">
           </div>
           <div class="login-field">
             <label class="login-label" for="request-email">Work Email</label>
             <input id="request-email" class="login-input" type="email"
                    autocomplete="email" autocapitalize="none" spellcheck="false"
-                   placeholder="jane@sparrowslodge.com">
+                  >
           </div>
           <div class="login-field">
             <label class="login-label" for="request-property">Property</label>
@@ -59,7 +58,7 @@
           <div class="login-field">
             <label class="login-label" for="request-note">Note (optional)</label>
             <textarea id="request-note" class="login-input request-note" rows="3"
-                      placeholder="Role, shift, or any context for approval"></textarea>
+                     ></textarea>
           </div>
           <div id="request-access-feedback" class="login-error" hidden></div>
           <button id="btn-request-access-submit" class="btn-primary login-btn" type="submit">Send Request</button>
@@ -69,14 +68,14 @@
   </div><!-- /step-login -->
 
 
-  <!-- ══════════════════════════════════════════════════════
-       STEP 0 — DASHBOARD
-       ══════════════════════════════════════════════════════ -->
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       STEP 0 â€” DASHBOARD
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div id="step-dashboard" class="step">
 
     <header class="step-header">
-      <div class="hotel-name">Sparrows Lodge</div>
-      <div class="hotel-sub">Palm Springs</div>
+      <div class="hotel-name">Hotel Registration</div>
+      <div class="hotel-sub">Management Portal</div>
       <div id="dashboard-date" class="dashboard-date"></div>
     </header>
 
@@ -90,7 +89,7 @@
               id="dashboard-search-input"
               class="dashboard-search-input"
               type="text"
-              placeholder="Search..."
+             
               autocomplete="off"
               spellcheck="false"
             >
@@ -121,7 +120,7 @@
           <button class="list-group-header deleted-toggle-header" id="btn-deleted-toggle" type="button">
             <span class="list-group-title">Recently Deleted</span>
             <span id="count-deleted" class="list-group-count"></span>
-            <span class="deleted-chevron">▾</span>
+            <span class="deleted-chevron">v</span>
           </button>
           <div id="list-deleted" class="entry-list" hidden></div>
         </div>
@@ -149,15 +148,15 @@
   </div><!-- /step-dashboard -->
 
 
-  <!-- ══════════════════════════════════════════════════════
-       STEP 1 — UPLOAD
-       ══════════════════════════════════════════════════════ -->
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       STEP 1 â€” UPLOAD
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div id="step-upload" class="step">
 
     <header class="step-header">
-      <button class="btn-go-dashboard">← Home</button>
-      <div class="hotel-name">Sparrows Lodge</div>
-      <div class="hotel-sub">Palm Springs</div>
+      <button class="btn-go-dashboard">&larr; Home</button>
+      <div class="hotel-name">Hotel Registration</div>
+      <div class="hotel-sub">Management Portal</div>
       <div class="step-title">New Registration</div>
       <div class="progress">
         <div class="progress-dot active"></div>
@@ -174,10 +173,10 @@
           <p>Tap below to select one or more guest confirmation documents. Reservation details will be extracted automatically.</p>
         </div>
 
-        <!-- Drop zone — tap or drag-and-drop -->
+        <!-- Drop zone â€” tap or drag-and-drop -->
         <div id="drop-zone" class="drop-zone" role="button" tabindex="0"
              aria-label="Tap to upload reservation PDFs">
-          <div class="drop-icon" aria-hidden="true">📄</div>
+          <div class="drop-icon" aria-hidden="true">&#128196;</div>
           <div class="drop-label">Tap to Upload PDFs</div>
           <div class="drop-sub">or drag and drop</div>
           <button id="browse-btn" class="browse-btn" type="button">Choose Files</button>
@@ -194,15 +193,15 @@
   </div><!-- /step-upload -->
 
 
-  <!-- ══════════════════════════════════════════════════════
-       STEP 2 — PROCESSING
-       ══════════════════════════════════════════════════════ -->
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       STEP 2 â€” PROCESSING
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div id="step-processing" class="step">
 
     <header class="step-header">
-      <button class="btn-go-dashboard">← Home</button>
-      <div class="hotel-name">Sparrows Lodge</div>
-      <div class="hotel-sub">Palm Springs</div>
+      <button class="btn-go-dashboard">&larr; Home</button>
+      <div class="hotel-name">Hotel Registration</div>
+      <div class="hotel-sub">Management Portal</div>
       <div class="step-title">Reading Document</div>
       <div class="progress">
         <div class="progress-dot done"></div>
@@ -215,22 +214,22 @@
       <div class="processing-center">
         <div class="spinner" role="status" aria-label="Processing document"></div>
         <div class="processing-label">Extracting Reservation Details</div>
-        <div class="processing-sub">This usually takes just a moment…</div>
+        <div class="processing-sub">This usually takes just a moment...</div>
       </div>
     </div>
 
   </div><!-- /step-processing -->
 
 
-  <!-- ══════════════════════════════════════════════════════
-       STEP 3 — REVIEW & EDIT
-       ══════════════════════════════════════════════════════ -->
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       STEP 3 â€” REVIEW & EDIT
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div id="step-review" class="step">
 
     <header class="step-header">
-      <button class="btn-go-dashboard">← Home</button>
-      <div class="hotel-name">Sparrows Lodge</div>
-      <div class="hotel-sub">Palm Springs</div>
+      <button class="btn-go-dashboard">&larr; Home</button>
+      <div class="hotel-name">Hotel Registration</div>
+      <div class="hotel-sub">Management Portal</div>
       <div class="step-title">Review &amp; Confirm</div>
       <div class="progress">
         <div class="progress-dot done"></div>
@@ -242,10 +241,10 @@
     <div class="step-body">
       <div class="step-body-inner">
 
-        <!-- Validation summary banner — shown after extraction -->
+        <!-- Validation summary banner â€” shown after extraction -->
         <div id="validation-banner" class="validation-banner" role="alert"></div>
 
-        <!-- ── Guest Information ─────────────────────────── -->
+        <!-- â”€â”€ Guest Information â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
         <section class="review-section">
           <div class="review-section-title">Guest Information</div>
 
@@ -254,7 +253,7 @@
               Guest Name <span class="field-required" aria-label="required">*</span>
             </label>
             <input id="field-guest-name" class="field-input" type="text"
-                   placeholder="Full name" autocomplete="off" autocorrect="off"
+                   autocomplete="off" autocorrect="off"
                    autocapitalize="words" spellcheck="false">
             <div class="field-hint" aria-live="polite"></div>
           </div>
@@ -262,7 +261,7 @@
           <div class="field-wrapper">
             <label class="field-label" for="field-email">Email</label>
             <input id="field-email" class="field-input" type="email"
-                   placeholder="guest@email.com" autocomplete="off" autocorrect="off"
+                   autocomplete="off" autocorrect="off"
                    autocapitalize="none" spellcheck="false">
             <div class="field-hint" aria-live="polite"></div>
           </div>
@@ -270,13 +269,13 @@
           <div class="field-wrapper">
             <label class="field-label" for="field-phone">Phone</label>
             <input id="field-phone" class="field-input" type="tel"
-                   placeholder="(555) 123-4567" autocomplete="off" autocorrect="off"
+                   autocomplete="off" autocorrect="off"
                    autocapitalize="none" spellcheck="false">
             <div class="field-hint" aria-live="polite"></div>
           </div>
         </section>
 
-        <!-- ── Reservation Details ──────────────────────── -->
+        <!-- â”€â”€ Reservation Details â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
         <section class="review-section">
           <div class="review-section-title">Reservation Details</div>
 
@@ -286,7 +285,7 @@
                 Confirmation # <span class="field-required" aria-label="required">*</span>
               </label>
               <input id="field-confirmation" class="field-input" type="text"
-                     placeholder="e.g. 591109111" autocomplete="off" spellcheck="false">
+                     autocomplete="off" spellcheck="false">
               <div class="field-hint" aria-live="polite"></div>
             </div>
           </div>
@@ -297,7 +296,7 @@
                 Arrival <span class="field-required" aria-label="required">*</span>
               </label>
               <input id="field-arrival" class="field-input" type="text"
-                     placeholder="MM/DD/YYYY" autocomplete="off">
+                     autocomplete="off">
               <div class="field-hint" aria-live="polite"></div>
             </div>
 
@@ -306,7 +305,7 @@
                 Departure <span class="field-required" aria-label="required">*</span>
               </label>
               <input id="field-departure" class="field-input" type="text"
-                     placeholder="MM/DD/YYYY" autocomplete="off">
+                     autocomplete="off">
               <div class="field-hint" aria-live="polite"></div>
             </div>
           </div>
@@ -317,7 +316,7 @@
                 Room Type <span class="field-required" aria-label="required">*</span>
               </label>
               <input id="field-room-type" class="field-input" type="text"
-                     placeholder="e.g. PR, ST, DL" autocomplete="off"
+                     autocomplete="off"
                      autocapitalize="characters">
               <div class="field-hint" aria-live="polite"></div>
             </div>
@@ -325,13 +324,13 @@
             <div class="field-wrapper">
               <label class="field-label" for="field-adults">Adults</label>
               <input id="field-adults" class="field-input" type="text"
-                     placeholder="# guests" autocomplete="off">
+                     autocomplete="off">
               <div class="field-hint" aria-live="polite"></div>
             </div>
           </div>
         </section>
 
-        <!-- ── Rate Information ─────────────────────────── -->
+        <!-- â”€â”€ Rate Information â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
         <section class="review-section">
           <div class="review-section-title">Rate Information</div>
 
@@ -340,7 +339,7 @@
               Avg. Nightly Rate (USD) <span class="field-required" aria-label="required">*</span>
             </label>
             <input id="field-nightly-rate" class="field-input" type="text"
-                   placeholder="0.00" autocomplete="off">
+                   autocomplete="off">
             <div class="field-hint" aria-live="polite"></div>
           </div>
 
@@ -349,14 +348,14 @@
                aria-label="Detected rate breakdown"></div>
         </section>
 
-        <!-- ── Resort Fee ──────────────────────────────────── -->
+        <!-- â”€â”€ Resort Fee â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
         <section class="review-section">
           <div class="review-section-title">Resort Fee</div>
 
           <div class="field-wrapper">
             <label class="field-label" for="field-resort-fee">Guest Choice</label>
             <select id="field-resort-fee" class="field-input field-select">
-              <option value="">— Not yet selected —</option>
+              <option value="">-- Not yet selected --</option>
               <option value="Approved">Opted In</option>
               <option value="Declined">Opted Out</option>
             </select>
@@ -364,7 +363,7 @@
           </div>
         </section>
 
-        <!-- ── Vehicle Information ─────────────────────────── -->
+        <!-- â”€â”€ Vehicle Information â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
         <section class="review-section">
           <div class="review-section-title">Vehicle Information</div>
 
@@ -372,21 +371,21 @@
             <div class="field-wrapper">
               <label class="field-label" for="field-car-make">Make</label>
               <input id="field-car-make" class="field-input" type="text"
-                     placeholder="e.g. Toyota" autocomplete="off" autocapitalize="words">
+                     autocomplete="off" autocapitalize="words">
               <div class="field-hint" aria-live="polite"></div>
             </div>
 
             <div class="field-wrapper">
               <label class="field-label" for="field-car-model">Model</label>
               <input id="field-car-model" class="field-input" type="text"
-                     placeholder="e.g. Camry" autocomplete="off" autocapitalize="words">
+                     autocomplete="off" autocapitalize="words">
               <div class="field-hint" aria-live="polite"></div>
             </div>
 
             <div class="field-wrapper">
               <label class="field-label" for="field-car-color">Color</label>
               <input id="field-car-color" class="field-input" type="text"
-                     placeholder="e.g. Silver" autocomplete="off" autocapitalize="words">
+                     autocomplete="off" autocapitalize="words">
               <div class="field-hint" aria-live="polite"></div>
             </div>
           </div>
@@ -396,29 +395,29 @@
     </div><!-- /step-body -->
 
     <div class="action-bar">
-      <button id="btn-back-upload" class="btn-secondary" type="button">↩ Back</button>
-      <button id="btn-confirm"     class="btn-primary"   type="button">Generate Card →</button>
+      <button id="btn-back-upload" class="btn-secondary" type="button">&larr; Back</button>
+      <button id="btn-confirm"     class="btn-primary"   type="button">Generate Card &rarr;</button>
     </div>
 
   </div><!-- /step-review -->
 
 
-  <!-- ══════════════════════════════════════════════════════
-       STEP 4 — REGISTRATION CARD
-       ══════════════════════════════════════════════════════ -->
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       STEP 4 â€” REGISTRATION CARD
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div id="step-card" class="step">
 
     <header class="step-header">
-      <button class="btn-go-dashboard">← Home</button>
+      <button class="btn-go-dashboard">&larr; Home</button>
     </header>
 
     <div class="step-body">
       <div class="step-body-inner">
 
 
-        <!-- ═══════════════════════════════════════════════
+        <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
              PRINTABLE REGISTRATION CARD
-             ═══════════════════════════════════════════════ -->
+             â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
         <article class="registration-card" id="registration-card">
 
           <!-- Hotel header -->
@@ -526,27 +525,27 @@
     </div><!-- /step-body -->
 
     <div class="action-bar">
-      <button id="btn-edit"          class="btn-secondary" type="button">← Edit</button>
+      <button id="btn-edit"          class="btn-secondary" type="button">&larr; Edit</button>
       <button id="btn-save-draft"    class="btn-secondary" type="button">Save &amp; Close</button>
-      <button id="btn-hand-to-guest" class="btn-complete"  type="button">Hand to Guest →</button>
+      <button id="btn-hand-to-guest" class="btn-complete"  type="button">Hand to Guest &rarr;</button>
     </div>
 
   </div><!-- /step-card -->
 
 
-  <!-- ══════════════════════════════════════════════════════
-       STEP — GUEST KIOSK FLOW
+  <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+       STEP â€” GUEST KIOSK FLOW
        Full-screen, one question at a time.
-       No header — progress bar + nav buttons provide orientation.
-       ══════════════════════════════════════════════════════ -->
+       No header â€” progress bar + nav buttons provide orientation.
+       â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div id="step-guest" class="step">
 
-    <!-- Progress bar fills left→right as guest advances -->
+    <!-- Progress bar fills leftâ†’right as guest advances -->
     <div class="guest-progress">
       <div class="guest-progress-bar" id="guest-progress-bar"></div>
     </div>
 
-    <!-- Slide container — slides animate in/out absolutely within this -->
+    <!-- Slide container â€” slides animate in/out absolutely within this -->
     <div class="guest-slides" id="guest-slides"></div>
 
     <!-- Fixed navigation bar -->
@@ -554,8 +553,8 @@
       <button id="guest-welcome-art" class="guest-welcome-art" type="button" aria-label="Home">
         <img src="assets/logo birds only.png" alt="" class="guest-welcome-art-img">
       </button>
-      <button id="guest-btn-back" type="button">← Back</button>
-      <button id="guest-btn-next" type="button">Continue →</button>
+      <button id="guest-btn-back" type="button">&larr; Back</button>
+      <button id="guest-btn-next" type="button">Continue &rarr;</button>
     </div>
 
   </div><!-- /step-guest -->
@@ -574,13 +573,13 @@
 
 </div><!-- /app -->
 
-<!-- PDF.js 3.x from CDN — must load before app modules -->
+<!-- PDF.js 3.x from CDN â€” must load before app modules -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
-<!-- Supabase — must load before supabaseClient.js -->
+<!-- Supabase â€” must load before supabaseClient.js -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<!-- App modules — load in dependency order (no build step required) -->
+<!-- App modules â€” load in dependency order (no build step required) -->
 <script src="js/supabaseClient.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/db.js"></script>
@@ -601,6 +600,7 @@
 
 </body>
 </html>
+
 
 
 

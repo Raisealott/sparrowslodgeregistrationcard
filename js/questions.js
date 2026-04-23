@@ -40,8 +40,8 @@ const Questions = (() => {
       requireOne:  true,
       showInReview: true,
       inputs: [
-        { field: 'email', label: 'Email Address', placeholder: 'your@email.com', inputType: 'email', reviewLabel: 'Email' },
-        { field: 'phone', label: 'Phone Number',  placeholder: '(760) 555-0100', inputType: 'tel',   reviewLabel: 'Phone' },
+        { field: 'email', label: 'Email Address', inputType: 'email', reviewLabel: 'Email' },
+        { field: 'phone', label: 'Phone Number', inputType: 'tel', reviewLabel: 'Phone' },
       ],
     },
     {
@@ -53,9 +53,9 @@ const Questions = (() => {
       showInReview: true,
       reviewLabel: 'Vehicle',
       inputs: [
-        { field: 'carMake',  label: 'Make',  placeholder: '', suggest: 'carBrand' },
-        { field: 'carModel', label: 'Model', placeholder: '', suggest: 'carModel' },
-        { field: 'carColor', label: 'Color', placeholder: ''   },
+        { field: 'carMake', label: 'Make', suggest: 'carBrand' },
+        { field: 'carModel', label: 'Model', suggest: 'carModel' },
+        { field: 'carColor', label: 'Color' },
       ],
     },
     {

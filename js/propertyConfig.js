@@ -1,4 +1,4 @@
-/**
+﻿/**
  * propertyConfig.js
  * Per-property branding and policy copy for the multi-tenant app.
  */
@@ -14,8 +14,8 @@ const PropertyConfig = (() => {
       guestHomeLogoSrc: 'assets/logo birds only.png',
       completeImageSrc: 'assets/youre all set bird.png',
       addressLines: [
-        '1330 E. Palm Canyon Drive · Palm Springs, California 92264',
-        '(760) 327-2300 · hello@sparrowslodge.com · sparrowslodge.com',
+        '1330 E. Palm Canyon Drive - Palm Springs, California 92264',
+        '(760) 327-2300 - hello@sparrowslodge.com - sparrowslodge.com',
       ],
       policyGreeting: "Greetings from Sparrow's Lodge!",
       policyParagraphs: [
@@ -34,13 +34,13 @@ const PropertyConfig = (() => {
     'holiday-house': {
       name: 'Holiday House',
       subTitle: 'Palm Springs',
-      logoSrc: null,
+      logoSrc: 'assets/Holiday House logo.png',
       logoAlt: 'Holiday House logo',
-      guestHomeLogoSrc: null,
+      guestHomeLogoSrc: 'assets/HH logo.png',
       completeImageSrc: null,
       addressLines: [
-        '200 W. Arenas Road · Palm Springs, California 92262',
-        '(760) 320-8866 · hello@holidayhouseps.com · holidayhouseps.com',
+        '200 W. Arenas Road - Palm Springs, California 92262',
+        '(760) 320-8866 - hello@holidayhouseps.com - holidayhouseps.com',
       ],
       policyGreeting: 'Greetings from Holiday House!',
       policyParagraphs: [
