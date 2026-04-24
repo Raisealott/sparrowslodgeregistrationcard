@@ -600,16 +600,12 @@ const GuestFlow = (() => {
 
   function _buildComplete() {
     const property = _propertyConfig();
-    if (property.completeImageSrc) {
-      return `
-        <div class="guest-slide-inner guest-complete">
-          <img src="${_esc(property.completeImageSrc)}" alt="You're all set" class="guest-complete-img">
-        </div>`;
-    }
-
+    const imgSrc = property.completeImageSrc;
     return `
       <div class="guest-slide-inner guest-complete">
-        <div class="guest-complete-heading">You're all set.</div>
+        ${imgSrc
+          ? `<img src="${_esc(imgSrc)}" alt="You're all set" class="guest-complete-img">`
+          : ''}
       </div>`;
   }
 
@@ -782,7 +778,7 @@ const GuestFlow = (() => {
       policyParagraphs: [],
       resortFeeOptInText: 'Opt In',
       signatureAgreement: 'By signing above you agree to hotel policies.',
-      completeImageSrc: null,
+      completeImageSrc: 'assets/youre all set.png',
     };
   }
 

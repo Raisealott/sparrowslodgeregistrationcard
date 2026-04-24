@@ -39,8 +39,8 @@ html, body {
 
 .app { height: 100%; }
 
-/* Global typography override: all properties use Catamaran Bold everywhere */
-* {
+/* Holiday House only: Catamaran Bold everywhere */
+html[data-property-slug="holiday-house"] * {
   font-family: 'Catamaran', sans-serif !important;
   font-weight: 700 !important;
 }
@@ -227,36 +227,107 @@ button {
   white-space: nowrap;
 }
 
+.dashboard-search-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
 .dashboard-search-wrap {
   position: relative;
-  margin-left: auto;
 }
 
 .dashboard-search-wrap::before {
   content: "";
   position: absolute;
-  right: 14px;
+  right: 12px;
   top: 50%;
   width: 9px;
   height: 9px;
   border: 2px solid #777;
   border-radius: 50%;
-  transform: translateY(-58%) scaleX(-1);
+  transform: translateY(-60%);
   pointer-events: none;
 }
 
 .dashboard-search-wrap::after {
   content: "";
   position: absolute;
-  right: 10px;
+  right: 9px;
   top: 50%;
-  width: 6px;
+  width: 5px;
   height: 2px;
   background: #777;
-  transform: translateY(2px) rotate(-45deg) scaleX(-1);
-  transform-origin: right center;
+  transform: translateY(20%) rotate(45deg);
+  transform-origin: left center;
   pointer-events: none;
 }
+
+.dashboard-filter-btn {
+  height: 30px;
+  padding: 0 8px;
+  border: 2px solid #000;
+  background: #fff;
+  font-family: var(--mono);
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.dashboard-filter-btn.is-active {
+  background: #000;
+  color: #fff;
+}
+
+.dashboard-filter-panel {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 4px 0 6px;
+  border-bottom: 1px solid #ddd;
+  margin-bottom: 12px;
+}
+.dashboard-filter-panel[hidden] { display: none; }
+
+.dashboard-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.dashboard-filter-label {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+}
+.dashboard-filter-date {
+  height: 28px;
+  border: 2px solid #000;
+  background: #fff;
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 0 6px;
+  border-radius: 0;
+}
+.dashboard-filter-date:focus { outline: none; }
+
+.dashboard-filter-clear {
+  height: 28px;
+  padding: 0 10px;
+  border: 2px solid #000;
+  background: #fff;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.dashboard-filter-clear:hover { background: #f5f5f5; }
 
 .dashboard-search-input {
   height: 30px;
@@ -359,6 +430,53 @@ button {
   display: flex;
   flex-direction: column;
   border: 2px solid #000;
+}
+
+.entry-list[hidden] {
+  display: none;
+}
+
+.submissions-see-more {
+  margin-top: 10px;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: #000;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.submissions-see-more:active {
+  opacity: 0.65;
+}
+
+.submissions-archive-list {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.submissions-archive-month-title {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+}
+
+.submissions-archive-month-list {
+  border: 2px solid #000;
+}
+
+.submissions-archive-day-header {
+  cursor: default;
+  background: #f3f3f3;
 }
 
 /* Each row */
@@ -469,7 +587,8 @@ button {
 
 /* Date sub-header for grouped previous submissions */
 .entry-date-header {
-  padding: 10px 16px 4px;
+  width: 100%;
+  padding: 10px 16px;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -477,8 +596,25 @@ button {
   color: #999;
   background: #f9f9f9;
   border-top: 1px solid #eee;
+  border-bottom: none;
+  border-left: none;
+  border-right: none;
+  font-family: var(--mono);
+  cursor: pointer;
+  text-align: left;
 }
 .entry-date-header:first-child { border-top: none; }
+.entry-date-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.entry-date-toggle:hover { background: #f0f0f0; }
+.entry-date-chevron {
+  font-size: 9px;
+  color: #aaa;
+}
+.entry-date-group[hidden] { display: none; }
 
 /* Empty state */
 .entry-empty {
@@ -1096,7 +1232,8 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Layout shell ─────────────────────────────────────────── */
 
-#step-guest { background: #CAD9EA; }
+#step-guest { background: #fff; }
+html[data-property-slug="holiday-house"] #step-guest { background: #CAD9EA; }
 
 .guest-progress {
   flex-shrink: 0;
@@ -1190,10 +1327,11 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: center;
   padding: 32px 28px 24px;
   overflow-y: auto;
-  background: #CAD9EA;
+  background: #fff;
   -webkit-overflow-scrolling: touch;
   transition: transform 0.32s cubic-bezier(0.4,0,0.2,1), opacity 0.32s;
 }
+html[data-property-slug="holiday-house"] .guest-slide { background: #CAD9EA; }
 .guest-slide.slide-from-right  { transform: translateX(100%); opacity: 0; }
 .guest-slide.slide-from-left   { transform: translateX(-100%); opacity: 0; }
 .guest-slide.slide-active      { transform: translateX(0); opacity: 1; }
@@ -1270,12 +1408,16 @@ html[data-property-slug="holiday-house"] .guest-slide[data-qid="complete"] .gues
 /* ── Question label (small caps) ─────────────────────────── */
 
 .gs-label {
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.22em;
   color: #999;
   margin-bottom: 28px;
+}
+html[data-property-slug="holiday-house"] .gs-label {
+  font-size: 15px;
+  color: #05263E;
 }
 
 .gs-sub {
@@ -1285,6 +1427,7 @@ html[data-property-slug="holiday-house"] .guest-slide[data-qid="complete"] .gues
   margin-top: 16px;
   max-width: 360px;
 }
+html[data-property-slug="holiday-house"] .gs-sub { color: #05263E; }
 
 /* ── Welcome slide ───────────────────────────────────────── */
 
@@ -1310,7 +1453,7 @@ html[data-property-slug="holiday-house"] .guest-slide[data-qid="complete"] .gues
 }
 .gw-greeting {
   font-family: var(--mono);
-  font-size: 44px;
+  font-size: clamp(40px, 8vw, 72px);
   line-height: 1.15;
   font-weight: 400;
   margin-bottom: 0;
@@ -1318,6 +1461,14 @@ html[data-property-slug="holiday-house"] .guest-slide[data-qid="complete"] .gues
   text-align: center;
 }
 .gw-greeting strong { font-weight: 700; }
+html[data-property-slug="holiday-house"] .gw-greeting {
+  font-family: 'Vignetta Regular', var(--mono) !important;
+  color: #05263E;
+}
+html[data-property-slug="holiday-house"] .gw-greeting strong {
+  font-family: 'Vignetta Regular', var(--mono) !important;
+  font-weight: 400;
+}
 .gw-sub {
   font-size: 16px;
   color: #777;
@@ -1388,6 +1539,7 @@ html[data-property-slug="holiday-house"] .guest-slide[data-qid="complete"] .gues
   appearance: none;
 }
 .guest-input:focus { outline: none; }
+html[data-property-slug="holiday-house"] .guest-input { color: #3F60AC; }
 .guest-input::placeholder {
   color: #ccc;
   font-weight: 400;
@@ -1682,7 +1834,7 @@ html[data-property-slug="holiday-house"] .guest-slide[data-qid="complete"] .gues
 /* ── Larger screens: bump up type sizes ──────────────────── */
 
 @media (min-width: 768px) {
-  .gw-greeting      { font-size: 54px; }
+  .gw-greeting      { font-size: clamp(54px, 10vw, 88px); }
   .confirm-value    { font-size: 36px; }
   .guest-input      { font-size: 32px; }
   .guest-complete-heading { font-size: 42px; }
@@ -1703,13 +1855,17 @@ html[data-property-slug="holiday-house"] .guest-slide[data-qid="complete"] .gues
 }
 .stack-field { width: 100%; text-align: left; position: relative; }
 .stack-field-label {
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.18em;
   color: #aaa;
   margin-bottom: 6px;
   padding-left: 2px;
+}
+html[data-property-slug="holiday-house"] .stack-field-label {
+  font-size: 13px;
+  color: #05263E;
 }
 .stack-input {
   font-size: 22px;
@@ -1784,6 +1940,7 @@ html[data-property-slug="holiday-house"] .guest-slide[data-qid="complete"] .gues
   border-bottom: 1px solid #e0e0e0;
   text-align: left;
 }
+html[data-property-slug="holiday-house"] .car-suggestion { color: #3F60AC; }
 .car-suggestion:last-child { border-bottom: none; }
 .car-suggestion:hover,
 .car-suggestion:active { background: #f5f5f5; }

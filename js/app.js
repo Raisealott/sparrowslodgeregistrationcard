@@ -19,6 +19,10 @@ const App = (() => {
   let _requestPanelOpen = false;
   let _isGeneratingCard = false;
   let _dashboardRenderTimer = null;
+  let _deletedExpanded = false;
+  let _submissionsArchiveEntries = [];
+
+  const SUBMISSIONS_PREVIEW_DATE_LIMIT = 12;
 
   // â”€â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
@@ -80,13 +84,39 @@ const App = (() => {
       if (!e.target?.closest?.('.dashboard-search-wrap')) _hideNameSuggestions();
     });
 
+    // Date filter panel
+    document.getElementById('btn-filter-toggle')?.addEventListener('click', () => {
+      const panel = document.getElementById('dashboard-filter-panel');
+      const btn   = document.getElementById('btn-filter-toggle');
+      if (!panel) return;
+      panel.hidden = !panel.hidden;
+      btn.classList.toggle('is-active', !panel.hidden);
+    });
+    document.getElementById('filter-date-from')?.addEventListener('change', () => renderDashboard());
+    document.getElementById('filter-date-to')?.addEventListener('change',   () => renderDashboard());
+    document.getElementById('btn-filter-clear')?.addEventListener('click',  () => {
+      const from = document.getElementById('filter-date-from');
+      const to   = document.getElementById('filter-date-to');
+      if (from) from.value = '';
+      if (to)   to.value   = '';
+      renderDashboard();
+    });
+
     // Recently deleted toggle
     document.getElementById('btn-deleted-toggle')?.addEventListener('click', () => {
+      const toggle = document.getElementById('btn-deleted-toggle');
       const list    = document.getElementById('list-deleted');
       const chevron = document.querySelector('#btn-deleted-toggle .deleted-chevron');
       if (!list) return;
-      list.hidden = !list.hidden;
-      if (chevron) chevron.textContent = list.hidden ? 'v' : '^';
+      _deletedExpanded = !_deletedExpanded;
+      list.hidden = !_deletedExpanded;
+      if (chevron) chevron.textContent = _deletedExpanded ? '^' : 'v';
+      if (toggle) toggle.setAttribute('aria-expanded', String(_deletedExpanded));
+    });
+
+    document.getElementById('btn-submissions-see-more')?.addEventListener('click', () => {
+      renderSubmissionsArchive(_submissionsArchiveEntries);
+      goToStep('submissions');
     });
 
     // All "â† Home" buttons
@@ -100,10 +130,6 @@ const App = (() => {
     document.getElementById('btn-show-request-access')?.addEventListener('click', toggleRequestAccessPanel);
     document.getElementById('request-access-form')?.addEventListener('submit', onRequestAccessSubmit);
     await _initRequestAccessForm();
-
-    // Admin access requests
-    document.getElementById('btn-refresh-access-requests')?.addEventListener('click', renderAccessRequests);
-    document.getElementById('list-access-requests')?.addEventListener('click', onAccessRequestActionClick);
 
     // Auth: restore session or show login
     const session = await Auth.init();
@@ -265,83 +291,6 @@ const App = (() => {
     }
   }
 
-  async function renderAccessRequests() {
-    const section = document.getElementById('access-requests-section');
-    const container = document.getElementById('list-access-requests');
-    const countEl = document.getElementById('count-access-requests');
-    if (!section || !container || !countEl) return;
-
-    if (Auth.getProfile()?.role !== 'admin') {
-      section.hidden = true;
-      return;
-    }
-
-    section.hidden = false;
-    container.innerHTML = '';
-
-    const { requests, error } = await Auth.listSignupRequests('pending');
-    if (error) {
-      const empty = document.createElement('div');
-      empty.className = 'entry-empty';
-      empty.textContent = error;
-      container.appendChild(empty);
-      countEl.textContent = '';
-      return;
-    }
-
-    countEl.textContent = requests.length > 0 ? `(${requests.length})` : '';
-    if (!requests.length) {
-      const empty = document.createElement('div');
-      empty.className = 'entry-empty';
-      empty.textContent = 'No pending sign-up requests';
-      container.appendChild(empty);
-      return;
-    }
-
-    requests.forEach(req => container.appendChild(createAccessRequestRow(req)));
-  }
-
-  function createAccessRequestRow(req) {
-    const row = document.createElement('div');
-    row.className = 'access-request-row';
-    const requestedDate = req.requested_at
-      ? new Date(req.requested_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
-      : 'Unknown';
-    const propertyName = req.requested_property?.name || 'Unknown property';
-    const safeNote = req.note ? `<div class="access-request-note">${req.note}</div>` : '';
-
-    row.innerHTML = `
-      <div class="entry-name">${req.full_name || 'Unknown Name'}</div>
-      <div class="entry-meta">${req.email || ''}</div>
-      <div class="access-request-meta">${propertyName} · Requested ${requestedDate}</div>
-      ${safeNote}
-      <div class="access-request-actions">
-        <button class="access-request-btn approve" type="button" data-access-action="approved" data-request-id="${req.id}">Approve</button>
-        <button class="access-request-btn reject" type="button" data-access-action="rejected" data-request-id="${req.id}">Reject</button>
-      </div>
-    `;
-    return row;
-  }
-
-  async function onAccessRequestActionClick(e) {
-    const btn = e.target?.closest?.('[data-access-action]');
-    if (!btn) return;
-
-    const requestId = btn.getAttribute('data-request-id');
-    const decision = btn.getAttribute('data-access-action');
-    if (!requestId || !decision) return;
-
-    const note = window.prompt('Optional internal note for this decision:', '')?.trim() || null;
-    btn.disabled = true;
-    try {
-      const { error } = await Auth.decideSignupRequest(requestId, decision, note);
-      if (error) window.alert(error);
-      await renderAccessRequests();
-    } finally {
-      btn.disabled = false;
-    }
-  }
-
   // ─── Step navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   function goToStep(name) {
@@ -361,13 +310,13 @@ const App = (() => {
     const search = _readDashboardSearch();
     const filtered = _filterDashboardEntries(all, search);
     const current  = filtered.filter(e => e.status === 'current');
-    const previous = filtered.filter(e => e.status === 'previous');
-    const hasSearch = Boolean(search.query);
+    const previous = _sortSubmissionsByDateDesc(filtered.filter(e => e.status === 'previous'));
+    const hasFilter = Boolean(search.query || search.dateFrom || search.dateTo);
+    _submissionsArchiveEntries = previous;
 
     renderGroup('list-current', current,
-      hasSearch ? 'No matching current registrations' : 'No current registrations');
-    renderGroupByDate('list-previous', previous,
-      hasSearch ? 'No matching previous entries' : 'No previous entries');
+      hasFilter ? 'No matching arrivals' : 'No arrivals');
+    renderSubmissionsPreview(previous, hasFilter);
     await renderDeletedGroup();
 
     const setBadge = (id, n) => {
@@ -376,12 +325,13 @@ const App = (() => {
     };
     setBadge('count-current',  current.length);
     setBadge('count-previous', previous.length);
-    await renderAccessRequests();
   }
 
   function _readDashboardSearch() {
-    const query = document.getElementById('dashboard-search-input')?.value?.trim() || '';
-    return { query };
+    const query     = document.getElementById('dashboard-search-input')?.value?.trim() || '';
+    const dateFrom  = document.getElementById('filter-date-from')?.value || '';
+    const dateTo    = document.getElementById('filter-date-to')?.value   || '';
+    return { query, dateFrom, dateTo };
   }
 
   function _scheduleDashboardRender(delay = 120) {
@@ -393,8 +343,25 @@ const App = (() => {
   }
 
   function _filterDashboardEntries(entries, search) {
-    if (!search?.query) return entries;
-    return entries.filter(entry => _entryMatchesSearch(entry, search));
+    let result = entries;
+    if (search?.query) {
+      result = result.filter(entry => _entryMatchesSearch(entry, search));
+    }
+    if (search?.dateFrom) {
+      const from = new Date(search.dateFrom);
+      result = result.filter(entry => {
+        const arrival = entry.fields?.arrivalDate ? new Date(entry.fields.arrivalDate) : null;
+        return arrival && arrival >= from;
+      });
+    }
+    if (search?.dateTo) {
+      const to = new Date(search.dateTo);
+      result = result.filter(entry => {
+        const arrival = entry.fields?.arrivalDate ? new Date(entry.fields.arrivalDate) : null;
+        return arrival && arrival <= to;
+      });
+    }
+    return result;
   }
 
   function _entryMatchesSearch(entry, search) {
@@ -505,11 +472,16 @@ const App = (() => {
 
   async function renderDeletedGroup() {
     const deleted    = await DB.getDeleted();
+    const toggle     = document.getElementById('btn-deleted-toggle');
     const container  = document.getElementById('list-deleted');
     const countEl    = document.getElementById('count-deleted');
+    const chevron    = document.querySelector('#btn-deleted-toggle .deleted-chevron');
 
     if (countEl) countEl.textContent = deleted.length > 0 ? `(${deleted.length})` : '';
     if (!container) return;
+    container.hidden = !_deletedExpanded;
+    if (chevron) chevron.textContent = _deletedExpanded ? '^' : 'v';
+    if (toggle) toggle.setAttribute('aria-expanded', String(_deletedExpanded));
     container.innerHTML = '';
 
     if (deleted.length === 0) {
@@ -538,38 +510,156 @@ const App = (() => {
     entries.forEach(entry => container.appendChild(createEntryRow(entry)));
   }
 
-  function renderGroupByDate(containerId, entries, emptyMessage) {
-    const container = document.getElementById(containerId);
+  function renderSubmissionsPreview(entries, hasFilter) {
+    const container = document.getElementById('list-previous');
+    const seeMoreBtn = document.getElementById('btn-submissions-see-more');
+    if (!container) return;
+
+    const groups = _buildSubmissionDateGroups(entries);
+    const limitedGroups = groups.slice(0, SUBMISSIONS_PREVIEW_DATE_LIMIT);
+    container.innerHTML = '';
+
+    if (groups.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'entry-empty';
+      empty.textContent = hasFilter ? 'No matching submissions' : 'No submissions yet';
+      container.appendChild(empty);
+      if (seeMoreBtn) seeMoreBtn.hidden = true;
+      return;
+    }
+
+    limitedGroups.forEach((groupData, index) => {
+      _appendDateGroup(container, groupData.label, groupData.items, index === 0);
+    });
+
+    if (seeMoreBtn) {
+      seeMoreBtn.hidden = groups.length <= SUBMISSIONS_PREVIEW_DATE_LIMIT;
+      if (!seeMoreBtn.hidden) {
+        const extra = groups.length - SUBMISSIONS_PREVIEW_DATE_LIMIT;
+        seeMoreBtn.textContent = `See More (${extra} more date${extra === 1 ? '' : 's'})`;
+      }
+    }
+  }
+
+  function renderSubmissionsArchive(entries) {
+    const container = document.getElementById('submissions-archive-list');
     if (!container) return;
     container.innerHTML = '';
 
-    if (entries.length === 0) {
+    if (!entries.length) {
       const empty = document.createElement('div');
       empty.className = 'entry-empty';
-      empty.textContent = emptyMessage;
+      empty.textContent = 'No submissions yet';
       container.appendChild(empty);
       return;
     }
 
-    // Group by calendar date of completedAt (fall back to createdAt)
+    const dateGroups = _buildSubmissionDateGroups(entries);
+    const monthGroups = new Map();
+
+    dateGroups.forEach(groupData => {
+      const monthKey = groupData.date
+        ? `${groupData.date.getUTCFullYear()}-${String(groupData.date.getUTCMonth() + 1).padStart(2, '0')}`
+        : 'unknown';
+      const monthLabel = groupData.date
+        ? groupData.date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+        : 'Unknown Month';
+
+      if (!monthGroups.has(monthKey)) monthGroups.set(monthKey, { monthLabel, days: [] });
+      monthGroups.get(monthKey).days.push(groupData);
+    });
+
+    [...monthGroups.values()].forEach(month => {
+      const monthSection = document.createElement('section');
+      monthSection.className = 'submissions-archive-month';
+
+      const monthHeader = document.createElement('h3');
+      monthHeader.className = 'submissions-archive-month-title';
+      monthHeader.textContent = month.monthLabel;
+      monthSection.appendChild(monthHeader);
+
+      const monthBody = document.createElement('div');
+      monthBody.className = 'entry-list submissions-archive-month-list';
+
+      month.days.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'entry-date-header submissions-archive-day-header';
+        dayHeader.textContent = day.label;
+        monthBody.appendChild(dayHeader);
+
+        day.items.forEach(entry => monthBody.appendChild(createEntryRow(entry)));
+      });
+
+      monthSection.appendChild(monthBody);
+      container.appendChild(monthSection);
+    });
+  }
+
+  function _buildSubmissionDateGroups(entries) {
     const groups = new Map();
+
     entries.forEach(entry => {
-      const ts  = entry.completedAt || entry.createdAt;
-      const key = ts ? new Date(ts).toDateString() : 'Unknown Date';
-      const label = ts
-        ? new Date(ts).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
-        : 'Unknown Date';
-      if (!groups.has(key)) groups.set(key, { label, items: [] });
+      const date = _getSubmissionDate(entry);
+      const key = date ? date.toISOString().slice(0, 10) : 'unknown-date';
+      if (!groups.has(key)) {
+        groups.set(key, {
+          date,
+          label: date
+            ? date.toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+              year: 'numeric',
+            })
+            : 'Unknown Date',
+          items: [],
+        });
+      }
       groups.get(key).items.push(entry);
     });
 
-    groups.forEach(({ label, items }) => {
-      const header = document.createElement('div');
-      header.className = 'entry-date-header';
-      header.textContent = label;
-      container.appendChild(header);
-      items.forEach(entry => container.appendChild(createEntryRow(entry)));
+    return [...groups.values()];
+  }
+
+  function _appendDateGroup(container, label, items, isOpenByDefault) {
+    const header = document.createElement('button');
+    header.type = 'button';
+    header.className = 'entry-date-header entry-date-toggle';
+    header.setAttribute('aria-expanded', isOpenByDefault ? 'true' : 'false');
+    header.innerHTML = `<span>${label}</span><span class="entry-date-chevron">${isOpenByDefault ? '▴' : '▾'}</span>`;
+
+    const group = document.createElement('div');
+    group.className = 'entry-date-group';
+    group.hidden = !isOpenByDefault;
+    items.forEach(entry => group.appendChild(createEntryRow(entry)));
+
+    header.addEventListener('click', () => {
+      const open = group.hidden;
+      group.hidden = !open;
+      header.setAttribute('aria-expanded', String(open));
+      header.querySelector('.entry-date-chevron').textContent = open ? '▴' : '▾';
     });
+
+    container.appendChild(header);
+    container.appendChild(group);
+  }
+
+  function _sortSubmissionsByDateDesc(entries) {
+    return [...entries].sort((a, b) => {
+      const aDate = _getSubmissionDate(a);
+      const bDate = _getSubmissionDate(b);
+      if (aDate && bDate) return bDate - aDate;
+      if (bDate) return 1;
+      if (aDate) return -1;
+      return 0;
+    });
+  }
+
+  function _getSubmissionDate(entry) {
+    const raw = entry?.completedAt || entry?.lastModifiedAt || entry?.createdAt || null;
+    if (!raw) return null;
+    const date = new Date(raw);
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   function createEntryRow(entry) {

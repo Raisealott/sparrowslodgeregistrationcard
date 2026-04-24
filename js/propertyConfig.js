@@ -37,7 +37,7 @@ const PropertyConfig = (() => {
       logoSrc: 'assets/Holiday House logo.png',
       logoAlt: 'Holiday House logo',
       guestHomeLogoSrc: 'assets/HH logo.png',
-      completeImageSrc: null,
+      completeImageSrc: 'assets/youre all set poppy.png',
       addressLines: [
         '200 W. Arenas Road - Palm Springs, California 92262',
         '(760) 320-8866 - hello@holidayhouseps.com - holidayhouseps.com',

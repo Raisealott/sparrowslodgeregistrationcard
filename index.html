@@ -84,55 +84,60 @@
 
         <div class="dashboard-top-row">
           <h2 class="dashboard-section-heading">Registration Cards</h2>
-          <div class="dashboard-search-wrap">
-            <input
-              id="dashboard-search-input"
-              class="dashboard-search-input"
-              type="text"
-             
-              autocomplete="off"
-              spellcheck="false"
-            >
-            <div id="dashboard-name-suggestions" class="dashboard-name-suggestions" hidden></div>
+          <div class="dashboard-search-group">
+            <div class="dashboard-search-wrap">
+              <input
+                id="dashboard-search-input"
+                class="dashboard-search-input"
+                type="text"
+                placeholder="Search..."
+                autocomplete="off"
+                spellcheck="false"
+              >
+              <div id="dashboard-name-suggestions" class="dashboard-name-suggestions" hidden></div>
+            </div>
+            <button id="btn-filter-toggle" class="dashboard-filter-btn" type="button" title="Filter by date">⊟</button>
           </div>
         </div>
+        <div id="dashboard-filter-panel" class="dashboard-filter-panel" hidden>
+          <div class="dashboard-filter-row">
+            <label class="dashboard-filter-label" for="filter-date-from">Arrival From</label>
+            <input id="filter-date-from" class="dashboard-filter-date" type="date">
+          </div>
+          <div class="dashboard-filter-row">
+            <label class="dashboard-filter-label" for="filter-date-to">Arrival To</label>
+            <input id="filter-date-to" class="dashboard-filter-date" type="date">
+          </div>
+          <button id="btn-filter-clear" class="dashboard-filter-clear" type="button">Clear</button>
+        </div>
 
-        <!-- Current registrations -->
+        <!-- Arrivals -->
         <div class="list-group">
           <div class="list-group-header">
-            <span class="list-group-title">Current</span>
+            <span class="list-group-title">Arrivals</span>
             <span id="count-current" class="list-group-count"></span>
           </div>
           <div id="list-current" class="entry-list"></div>
         </div>
 
-        <!-- Previous / completed registrations -->
+        <!-- Submissions -->
         <div class="list-group">
           <div class="list-group-header">
-            <span class="list-group-title">Previous</span>
+            <span class="list-group-title">Submissions</span>
             <span id="count-previous" class="list-group-count"></span>
           </div>
           <div id="list-previous" class="entry-list"></div>
+          <button id="btn-submissions-see-more" class="submissions-see-more" type="button" hidden>See More</button>
         </div>
 
         <!-- Recently deleted -->
         <div class="list-group">
-          <button class="list-group-header deleted-toggle-header" id="btn-deleted-toggle" type="button">
+          <button class="list-group-header deleted-toggle-header" id="btn-deleted-toggle" type="button" aria-expanded="false">
             <span class="list-group-title">Recently Deleted</span>
             <span id="count-deleted" class="list-group-count"></span>
             <span class="deleted-chevron">v</span>
           </button>
           <div id="list-deleted" class="entry-list" hidden></div>
-        </div>
-
-        <!-- Access requests (admin only) -->
-        <div id="access-requests-section" class="list-group" hidden>
-          <div class="list-group-header access-requests-header">
-            <span class="list-group-title">Sign-up Requests</span>
-            <span id="count-access-requests" class="list-group-count"></span>
-            <button id="btn-refresh-access-requests" class="access-requests-refresh" type="button">Refresh</button>
-          </div>
-          <div id="list-access-requests" class="entry-list"></div>
         </div>
 
       </div>
@@ -146,6 +151,21 @@
     </div>
 
   </div><!-- /step-dashboard -->
+
+  <div id="step-submissions" class="step">
+    <header class="step-header">
+      <button id="btn-submissions-back" class="btn-go-dashboard" type="button">&larr; Back</button>
+      <div class="hotel-name">Hotel Registration</div>
+      <div class="hotel-sub">Management Portal</div>
+      <div class="step-title">Submissions Archive</div>
+    </header>
+
+    <div class="step-body">
+      <div class="step-body-inner">
+        <div id="submissions-archive-list" class="submissions-archive-list"></div>
+      </div>
+    </div>
+  </div><!-- /step-submissions -->
 
 
   <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
