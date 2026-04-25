@@ -20,11 +20,22 @@ const Parser = (() => {
    * The name ends at a newline, large whitespace gap, or the start of a zip code.
    */
   function detectGuestName(text) {
-    let m = text.match(/Guest\s+Information[:\s]+([A-Za-z][A-Za-z\s\-'.]{2,40}?)(?=\s{2,}|\n|\s\d{5})/i);
+    // Primary: "Guest Information: First Last" followed by 2+ spaces, newline, zip code,
+    // or a known secondary label (Company/Agent/Group/Source) that shares the same visual line.
+    // pdfExtractor joins same-row cells with a single space, so we must also accept
+    // a single space before these known label words.
+    let m = text.match(/Guest\s+Information[:\s]+([A-Za-z][A-Za-z\s\-'.]{2,40}?)(?=\s{2,}|\n|\s\d{5}|\s+(?:Company|Agent|Group|Source)\b)/i);
     if (m) return { value: m[1].trim(), confidence: 'high' };
 
+    // Conservative fallback: "GUEST: Name" style, but exclude structural labels like
+    // "Guest Signature" or "Guest Information" from being captured as a name.
     m = text.match(/GUEST[:\s]+([A-Za-z][A-Za-z\s\-'.]{2,40}?)(?=\s{2,}|\n)/i);
-    if (m) return { value: m[1].trim(), confidence: 'medium' };
+    if (m) {
+      const name = m[1].trim();
+      if (!/^(signature|information|name|id|number|checkout|checkin)$/i.test(name)) {
+        return { value: name, confidence: 'medium' };
+      }
+    }
 
     return null;
   }
@@ -78,11 +89,14 @@ const Parser = (() => {
    * Common codes: PR (Premier), ST (Standard), DL (Deluxe), STE (Suite), etc.
    */
   function detectRoomType(text) {
-    // Structural: after CONFIRMATION ARRIVAL DEPARTURE comes ROOM_TYPE
-    let m = text.match(/\b\d{7,12}\b\s+\d{2}[-\/]\d{2}[-\/]\d{2,4}\s+\d{2}[-\/]\d{2}[-\/]\d{2,4}\s+([A-Z]{1,5})\b/);
+    // Structural: after CONFIRMATION ARRIVAL DEPARTURE comes ROOM_TYPE.
+    // Holiday House room types include BETTER (6 chars) so allow up to 8.
+    let m = text.match(/\b\d{7,12}\b\s+\d{2}[-\/]\d{2}[-\/]\d{2,4}\s+\d{2}[-\/]\d{2}[-\/]\d{2,4}\s+([A-Z]{1,8})\b/);
     if (m) return { value: m[1], confidence: 'high' };
 
-    m = text.match(/Room\s+Type[:\s]+([A-Za-z]{1,10})/i);
+    // Label fallback: require a colon separator to avoid matching "Room Type Adults"
+    // from the column header row (where "Adults" follows with only a space).
+    m = text.match(/Room\s+Type\s*:\s*([A-Za-z]{1,10})/i);
     if (m) return { value: m[1].toUpperCase().trim(), confidence: 'high' };
 
     return null;
@@ -95,8 +109,8 @@ const Parser = (() => {
     let m = text.match(/Adults[:\s]+(\d)/i);
     if (m) return { value: m[1], confidence: 'high' };
 
-    // Structural: digit immediately after the room type code
-    m = text.match(/\b\d{7,12}\b\s+\d{2}[-\/]\d{2}[-\/]\d{2,4}\s+\d{2}[-\/]\d{2}[-\/]\d{2,4}\s+[A-Z]{1,5}\s+(\d)\b/);
+    // Structural: digit immediately after the room type code (allow up to 8 chars for room type)
+    m = text.match(/\b\d{7,12}\b\s+\d{2}[-\/]\d{2}[-\/]\d{2,4}\s+\d{2}[-\/]\d{2}[-\/]\d{2,4}\s+[A-Z]{1,8}\s+(\d)\b/);
     if (m) return { value: m[1], confidence: 'medium' };
 
     return null;
@@ -119,9 +133,9 @@ const Parser = (() => {
       }
     }
 
-    // Fallback: labeled single rate. Handles variants like:
-    // "Nightly Rate: 426.00 USD" and "Avg. Nightly Rate (USD) * 426.00".
-    const labeledRate = findPositiveRateNearLabel(text, /(?:Avg\.?\s*)?Nightly\s+Rate(?:\s*\([^)]*\))?/i);
+    // Fallback: labeled single rate. Use a tight 60-char window so nearby table
+    // rows (confirmation numbers, resort fee lines) are excluded.
+    const labeledRate = findPositiveRateNearLabel(text, /(?:Avg\.?\s*)?Nightly\s+Rate(?:\s*\([^)]*\))?/i, 60);
     if (labeledRate) return { value: labeledRate, confidence: 'medium' };
 
     // Last resort: any dollar-ish amount near a rate keyword on the same line
@@ -137,14 +151,18 @@ const Parser = (() => {
 
     const afterLabel = text.slice(label.index + label[0].length, label.index + label[0].length + windowSize);
 
+    // Require >= 10 to avoid matching incidental numbers (e.g. adults count "2")
+    // that may appear adjacent to the USD currency label in the table row.
     const usdAmount = afterLabel.match(/([\d,]+(?:\.\d{2})?)\s*USD/i);
     if (usdAmount) {
       const normalized = usdAmount[1].replace(/[^0-9.]/g, '');
       const num = parseFloat(normalized);
-      if (!Number.isNaN(num) && num > 0) return normalized;
+      if (!Number.isNaN(num) && num >= 10) return normalized;
     }
 
-    const amounts = afterLabel.match(/\$?\s*[\d,]+(?:\.\d{2})?\s*(?:USD)?/gi) || [];
+    // Require a decimal point so bare integers (confirmation numbers, date
+    // components, room numbers) are never mistaken for a formatted rate.
+    const amounts = afterLabel.match(/\$?\s*[\d,]+\.\d{2}\s*(?:USD)?/gi) || [];
 
     for (const amount of amounts) {
       const normalized = amount.replace(/[^0-9.]/g, '');
@@ -159,9 +177,18 @@ const Parser = (() => {
    * Guest email address.
    */
   function detectEmail(text) {
-    // Strong signal: explicitly labeled email field
-    let m = text.match(/(?:Guest\s+)?E-?mail[:\s]+([^\s@]+@[^\s]+\.[^\s,\n]{2,})/i);
-    if (m) return { value: m[1].trim(), confidence: 'high' };
+    // Strong signal: explicitly labeled email field.
+    // Guard against matching the hotel's own contact email, which appears in
+    // footers as "Telephone: xxx | Email: hotel@domain.com".
+    const emailLabelRe = /(?:Guest\s+)?E-?mail[:\s]+([^\s@]+@[^\s]+\.[^\s,\n]{2,})/gi;
+    let m;
+    while ((m = emailLabelRe.exec(text)) !== null) {
+      const before = text.slice(Math.max(0, m.index - 130), m.index);
+      const isHotelContact = /telephone|phone|\(\d{3}\)|website|www\./i.test(before);
+      if (!isHotelContact) {
+        return { value: m[1].trim(), confidence: 'high' };
+      }
+    }
 
     // Conservative fallback: only accept emails from lines that look guest-related.
     // This avoids pulling the hotel's contact email from headers/footers.
