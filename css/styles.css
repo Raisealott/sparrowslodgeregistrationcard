@@ -2082,16 +2082,62 @@ html[data-property-slug="holiday-house"] .car-suggestion { color: #3F60AC; }
   color: #111;
 }
 
-.request-access-panel {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid #ececec;
-  text-align: left;
+.btn-back-signin {
+  display: block;
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 20px;
+  font-family: 'Courier Prime', monospace;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #888;
+  cursor: pointer;
+}
+
+.btn-back-signin:hover {
+  color: #111;
+}
+
+#pane-signup .login-sub {
+  font-size: 13px;
+  color: #888;
+  margin-bottom: 20px;
 }
 
 .request-note {
   resize: vertical;
   min-height: 76px;
+}
+
+.login-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-input-pw {
+  flex: 1;
+  padding-right: 52px;
+}
+
+.btn-pw-toggle {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  font-family: 'Courier Prime', monospace;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #888;
+  cursor: pointer;
+  padding: 0;
+}
+
+.btn-pw-toggle:hover {
+  color: #111;
 }
 
 .login-success {

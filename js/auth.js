@@ -25,7 +25,16 @@ const Auth = (() => {
     const { data: { session } } = await _supabase.auth.getSession();
     if (session) {
       _session = session;
-      await _loadProfile(session.user.id);
+      const { profile, property, error } = await _loadProfile(session.user.id);
+      if (error) {
+        await signOut();
+        return null;
+      }
+      if (!profile || !property) {
+        // A valid auth session without an approved staff profile should never unlock app access.
+        await signOut();
+        return null;
+      }
     }
     return _session;
   }
@@ -53,7 +62,7 @@ const Auth = (() => {
       if (!profile || !property) {
         await signOut();
         return {
-          error: 'Your account is authenticated but not assigned to a property yet. Ask an admin to create your staff record in Supabase.'
+          error: 'Your account is pending approval.'
         };
       }
 
@@ -66,11 +75,25 @@ const Auth = (() => {
   }
 
   async function signOut() {
-    // Local scope clears the client session immediately without waiting on network.
-    await _supabase.auth.signOut({ scope: 'local' });
-    _session  = null;
-    _profile  = null;
-    _property = null;
+    // Guard against rare hangs so UI never gets stuck in "Signing Out...".
+    const timeoutMs = 2500;
+    let timer = null;
+
+    try {
+      await Promise.race([
+        _supabase.auth.signOut({ scope: 'local' }),
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Sign-out timed out.')), timeoutMs);
+        }),
+      ]);
+    } catch (err) {
+      console.warn('[Auth] signOut fallback:', err?.message || err);
+    } finally {
+      if (timer) clearTimeout(timer);
+      _session  = null;
+      _profile  = null;
+      _property = null;
+    }
   }
 
   async function getPropertiesPublic() {
@@ -89,34 +112,46 @@ const Auth = (() => {
   async function requestAccess(payload) {
     const fullName = (payload?.fullName || '').trim();
     const email = (payload?.email || '').trim().toLowerCase();
+    const password = (payload?.password || '').trim();
     const requestedPropertyId = payload?.requestedPropertyId || null;
-    const note = (payload?.note || '').trim() || null;
 
     if (!fullName) return { error: 'Please enter your full name.' };
     if (!email) return { error: 'Please enter your email address.' };
+    if (!password || password.length < 6) return { error: 'Password must be at least 6 characters.' };
     if (!requestedPropertyId) return { error: 'Please choose a property.' };
 
-    const { data, error } = await _supabase
+    // Create the auth account so password is set securely
+    const { data: signUpData, error: signUpError } = await _supabase.auth.signUp({ email, password });
+    if (signUpError && !signUpError.message?.toLowerCase().includes('already registered')) {
+      console.error('[Auth] requestAccess signUp error:', signUpError);
+      return { error: signUpError.message || 'Could not create account. Please try again.' };
+    }
+
+    // Log the request for admin review
+    const { error: insertError } = await _supabase
       .from('signup_requests')
       .insert({
         full_name: fullName,
         email,
         requested_property_id: requestedPropertyId,
-        note,
         status: 'pending',
-      })
-      .select('id')
-      .single();
+      });
 
-    if (error) {
-      if (error.code === '23505') {
+    if (insertError) {
+      if (insertError.code === '23505') {
         return { error: 'A pending request already exists for this email.' };
       }
-      console.error('[Auth] requestAccess error:', error);
-      return { error: 'Could not submit your request right now. Please try again.' };
+      console.error('[Auth] requestAccess insert error:', insertError);
+      return { error: 'Could not submit your access request right now. Please try again.' };
     }
 
-    return { requestId: data?.id ?? null, error: null };
+    // Some Supabase projects auto-confirm signups and return an active session.
+    // Force sign-out so all new accounts remain pending until approved.
+    if (signUpData?.session) {
+      await signOut();
+    }
+
+    return { error: null };
   }
 
   async function listSignupRequests(status = 'pending') {

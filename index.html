@@ -20,7 +20,9 @@
        STEP â€” LOGIN
        â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
   <div id="step-login" class="step">
-    <div class="login-wrap">
+
+    <!-- Sign-in pane -->
+    <div id="pane-signin" class="login-wrap">
       <div class="login-logo">Hotel Guest Registration</div>
       <div class="login-sub"></div>
       <form id="login-form" class="login-form" novalidate>
@@ -38,33 +40,44 @@
         <button id="btn-login" class="btn-primary login-btn" type="submit">Sign In</button>
       </form>
       <button id="btn-show-request-access" class="btn-request-access" type="button">Sign Up</button>
-      <div id="request-access-panel" class="request-access-panel" hidden>
-        <form id="request-access-form" class="login-form" novalidate>
-          <div class="login-field">
-            <label class="login-label" for="request-full-name">Full Name</label>
-            <input id="request-full-name" class="login-input" type="text"
-                   autocomplete="name">
-          </div>
-          <div class="login-field">
-            <label class="login-label" for="request-email">Work Email</label>
-            <input id="request-email" class="login-input" type="email"
-                   autocomplete="email" autocapitalize="none" spellcheck="false"
-                  >
-          </div>
-          <div class="login-field">
-            <label class="login-label" for="request-property">Property</label>
-            <select id="request-property" class="login-input"></select>
-          </div>
-          <div class="login-field">
-            <label class="login-label" for="request-note">Note (optional)</label>
-            <textarea id="request-note" class="login-input request-note" rows="3"
-                     ></textarea>
-          </div>
-          <div id="request-access-feedback" class="login-error" hidden></div>
-          <button id="btn-request-access-submit" class="btn-primary login-btn" type="submit">Send Request</button>
-        </form>
-      </div>
     </div>
+
+    <!-- Sign-up pane (separate page feel) -->
+    <div id="pane-signup" class="login-wrap" hidden>
+      <button id="btn-back-to-signin" class="btn-back-signin" type="button">← Back to Sign In</button>
+      <div class="login-logo">Request Access</div>
+
+      <form id="request-access-form" class="login-form" novalidate>
+        <div class="login-field">
+          <label class="login-label" for="request-full-name">Full Name</label>
+          <input id="request-full-name" class="login-input" type="text"
+                 autocomplete="name">
+        </div>
+        <div class="login-field">
+          <label class="login-label" for="request-email">Email</label>
+          <input id="request-email" class="login-input" type="email"
+                 autocomplete="email" autocapitalize="none" spellcheck="false">
+        </div>
+        <div class="login-field">
+          <label class="login-label" for="request-password">Password</label>
+          <div class="login-input-wrap">
+            <input id="request-password" class="login-input login-input-pw" type="password"
+                   autocomplete="new-password">
+            <button type="button" class="btn-pw-toggle" aria-label="Show password"
+                    onclick="(function(btn){var i=document.getElementById('request-password');var show=i.type==='password';i.type=show?'text':'password';btn.textContent=show?'Hide':'Show';})(this)">Show</button>
+          </div>
+        </div>
+
+        <div class="login-field">
+          <label class="login-label" for="request-property">Property</label>
+          <select id="request-property" class="login-input"></select>
+        </div>
+
+        <div id="request-access-feedback" class="login-error" hidden></div>
+        <button id="btn-request-access-submit" class="btn-primary login-btn" type="submit">Send Request</button>
+      </form>
+    </div>
+
   </div><!-- /step-login -->
 
 

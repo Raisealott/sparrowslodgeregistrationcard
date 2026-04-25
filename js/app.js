@@ -127,7 +127,8 @@ const App = (() => {
 
     // Login form
     document.getElementById('login-form')?.addEventListener('submit', onLoginSubmit);
-    document.getElementById('btn-show-request-access')?.addEventListener('click', toggleRequestAccessPanel);
+    document.getElementById('btn-show-request-access')?.addEventListener('click', showSignupPane);
+    document.getElementById('btn-back-to-signin')?.addEventListener('click', showSigninPane);
     document.getElementById('request-access-form')?.addEventListener('submit', onRequestAccessSubmit);
     await _initRequestAccessForm();
 
@@ -149,6 +150,17 @@ const App = (() => {
   }
 
   async function _onAuthenticated() {
+    if (!Auth.getProfile() || !Auth.getProperty()) {
+      await Auth.signOut();
+      const errorEl = document.getElementById('login-error');
+      if (errorEl) {
+        errorEl.textContent = 'Your account is pending approval.';
+        errorEl.hidden = false;
+      }
+      goToStep('login');
+      return;
+    }
+
     _applyPropertyConfig(PropertyConfig.current());
 
     // Seed today's date in the dashboard header
@@ -241,15 +253,16 @@ const App = (() => {
     select.innerHTML = options.join('');
   }
 
-  function toggleRequestAccessPanel() {
-    const panel = document.getElementById('request-access-panel');
-    const btn = document.getElementById('btn-show-request-access');
-    if (!panel || !btn) return;
+  function showSignupPane() {
+    document.getElementById('pane-signin').hidden = true;
+    const signup = document.getElementById('pane-signup');
+    signup.hidden = false;
+    signup.querySelector('input,select,textarea')?.focus();
+  }
 
-    _requestPanelOpen = !_requestPanelOpen;
-    panel.hidden = !_requestPanelOpen;
-    btn.textContent = _requestPanelOpen ? 'Hide Sign-up Form' : 'Sign Up';
-    if (_requestPanelOpen) panel.querySelector('input,select,textarea')?.focus();
+  function showSigninPane() {
+    document.getElementById('pane-signup').hidden = true;
+    document.getElementById('pane-signin').hidden = false;
   }
 
   function _setRequestAccessFeedback(message, type = 'error') {
@@ -265,14 +278,14 @@ const App = (() => {
     const btn = document.getElementById('btn-request-access-submit');
     const fullName = document.getElementById('request-full-name')?.value?.trim() ?? '';
     const email = document.getElementById('request-email')?.value?.trim() ?? '';
+    const password = document.getElementById('request-password')?.value ?? '';
     const requestedPropertyId = document.getElementById('request-property')?.value ?? '';
-    const note = document.getElementById('request-note')?.value?.trim() ?? '';
 
     _setRequestAccessFeedback('');
     if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
 
     try {
-      const { error } = await Auth.requestAccess({ fullName, email, requestedPropertyId, note });
+      const { error } = await Auth.requestAccess({ fullName, email, password, requestedPropertyId });
       if (error) {
         _setRequestAccessFeedback(error, 'error');
         return;
@@ -280,12 +293,12 @@ const App = (() => {
 
       document.getElementById('request-access-form')?.reset();
       _setRequestAccessFeedback(
-        'Sign-up request sent. An admin must approve it before account setup.',
+        'Sign up request received.',
         'success'
       );
     } catch (err) {
       console.error('[App] onRequestAccessSubmit unexpected error:', err);
-      _setRequestAccessFeedback('Unable to submit request right now. Please try again.', 'error');
+      _setRequestAccessFeedback('Unable to create account. Please try again.', 'error');
     } finally {
       if (btn) { btn.disabled = false; btn.textContent = 'Send Request'; }
     }
